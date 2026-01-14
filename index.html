@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chess Experimental Study</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        :root {
+            --bg: #fdfcfb;
+            --text: #3c3c3c;
+            --border: #e0ddd8;
+            --white-sq: #ffffff;
+            --black-sq: #f2f0ed;
+            --highlight: rgba(190, 175, 150, 0.3);
+            --last-move: rgba(220, 210, 190, 0.4);
+        }
+
+        body {
+            font-family: "Georgia", serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        header { text-align: center; margin-bottom: 40px; }
+        h1 { font-weight: 400; font-size: 1.4rem; letter-spacing: 0.05em; margin-bottom: 8px; }
+        p.subtitle { font-style: italic; font-size: 0.9rem; color: #888; margin: 0; }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 1px solid var(--border);
+            user-select: none;
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .white { background-color: var(--white-sq); }
+        .black { background-color: var(--black-sq); }
+
+        /* Subtle dot for valid moves */
+        .square.can-move-to::after {
+            content: "";
+            width: 12px;
+            height: 12px;
+            background-color: var(--highlight);
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .square.selected { background-color: var(--highlight); }
+        .square.last-move { background-color: var(--last-move); }
+
+        .piece { 
+            position: relative; 
+            z-index: 10; 
+            display: inline-block;
+            line-height: 1;
+        }
+
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 30px;
+        }
+
+        button {
+            background: none;
+            border: none;
+            font-family: "Georgia", serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            color: var(--text);
+            border-bottom: 1px solid transparent;
+            padding: 4px 0;
+            transition: 0.3s;
+        }
+
+        button:hover { border-bottom: 1px solid var(--text); }
+        button:disabled { color: #ccc; cursor: default; }
+
+        .status { margin-top: 24px; font-style: italic; color: #666; font-size: 0.95rem; }
+        
+        footer { margin-top: 80px; font-size: 0.75rem; color: #aaa; }
+        footer a { color: inherit; text-decoration: none; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>The Royal Game</h1>
+    <p class="subtitle">A study in movement and spatial logic.</p>
+</header>
+
+<div id="board"></div>
+<div class="status" id="status">Loading...</div>
+
+<div class="controls">
+    <button id="undoBtn">Undo</button>
+    <button id="resetBtn">Reset</button>
+</div>
+
+<footer>
+    Return to my <a href="https://abhikhur27.github.io">Portfolio</a>
+</footer>
+
+<script>
+    // Failsafe initialization for different Chess.js builds
+    let game;
+    try {
+        game = new Chess();
+    } catch (e) {
+        game = Chess();
+    }
+
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const undoBtn = document.getElementById('undoBtn');
+    
+    let selectedSquare = null;
+
+    // Direct Unicode mapping
+    const pieces = {
+        'w': { 'p': '♙', 'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔' },
+        'b': { 'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚' }
+    };
+
+    function draw() {
+        boardEl.innerHTML = '';
+        const history = game.history({ verbose: true });
+        const lastMove = history.length > 0 ? history[history.length - 1] : null;
+
+        for (let i = 0; i < 64; i++) {
+            const r = Math.floor(i / 8);
+            const c = i % 8;
+            const sqName = String.fromCharCode(97 + c) + (8 - r);
+            
+            const sq = document.createElement('div');
+            sq.className = `square ${(r + c) % 2 === 0 ? 'white' : 'black'}`;
+            sq.dataset.square = sqName;
+
+            if (lastMove && (lastMove.from === sqName || lastMove.to === sqName)) {
+                sq.classList.add('last-move');
+            }
+            
+            if (selectedSquare === sqName) {
+                sq.classList.add('selected');
+            }
+
+            const p = game.get(sqName);
+            if (p) {
+                const span = document.createElement('span');
+                span.className = 'piece';
+                span.innerHTML = pieces[p.color][p.type];
+                sq.appendChild(span);
+            }
+
+            sq.onclick = () => clicked(sqName);
+            boardEl.appendChild(sq);
+        }
+
+        // Add move suggestions if a piece is selected
+        if (selectedSquare) {
+            const moves = game.moves({ square: selectedSquare, verbose: true });
+            moves.forEach(m => {
+                const target = document.querySelector(`[data-square="${m.to}"]`);
+                if (target) target.classList.add('can-move-to');
+            });
+        }
+
+        updateStatus();
+    }
+
+    function clicked(sq) {
+        if (selectedSquare) {
+            const move = game.move({ from: selectedSquare, to: sq, promotion: 'q' });
+            selectedSquare = null;
+            if (move) {
+                draw();
+                return;
+            }
+        }
+        
+        const p = game.get(sq);
+        if (p && p.color === game.turn()) {
+            selectedSquare = sq;
+        } else {
+            selectedSquare = null;
+        }
+        draw();
+    }
+
+    function updateStatus() {
+        let s = game.turn() === 'w' ? "White's turn" : "Black's turn";
+        if (game.in_checkmate()) s = "Checkmate.";
+        else if (game.in_draw()) s = "Draw.";
+        else if (game.in_check()) s += " (Check)";
+        
+        statusEl.innerText = s;
+        undoBtn.disabled = game.history().length === 0;
+    }
+
+    undoBtn.onclick = () => { game.undo(); selectedSquare = null; draw(); };
+    document.getElementById('resetBtn').onclick = () => { game.reset(); selectedSquare = null; draw(); };
+
+    // Kickstart
+    draw();
+</script>
+</body>
+</html>
