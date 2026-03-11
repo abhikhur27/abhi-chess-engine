@@ -15,8 +15,8 @@ const loadFenBtn = document.getElementById('load-fen');
 
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const pieceSymbols = {
-  w: { p: '?', r: '?', n: '?', b: '?', q: '?', k: '?' },
-  b: { p: '?', r: '?', n: '?', b: '?', q: '?', k: '?' },
+  w: { p: '&#9817;', r: '&#9814;', n: '&#9816;', b: '&#9815;', q: '&#9813;', k: '&#9812;' },
+  b: { p: '&#9823;', r: '&#9820;', n: '&#9822;', b: '&#9821;', q: '&#9819;', k: '&#9818;' },
 };
 
 let game = createGame();
@@ -87,7 +87,10 @@ function renderBoard() {
 
       const piece = game.get(squareName);
       if (piece) {
-        square.textContent = pieceSymbols[piece.color][piece.type];
+        const glyph = document.createElement('span');
+        glyph.className = 'piece-glyph';
+        glyph.innerHTML = pieceSymbols[piece.color][piece.type];
+        square.appendChild(glyph);
       }
 
       const isLastRank = rankIndex === ranks.length - 1;
