@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Abhi Chess Studio</title>
+  <title>Abhi Chess Engine</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,8 +13,8 @@
 <body>
   <header class="container header">
     <a class="back-link" href="https://abhikhur27.github.io/" target="_blank" rel="noreferrer">Back to Portfolio</a>
-    <h1>Abhi Chess Studio</h1>
-    <p>Play, inspect game state, and export notation in a lightweight browser chess workspace.</p>
+    <h1>Abhi Chess Engine</h1>
+    <p>Play, inspect game state, and run a browser engine with depth-controlled move search.</p>
   </header>
 
   <main class="container layout">
@@ -32,6 +32,20 @@
         <button id="reset" type="button">Reset</button>
         <button id="flip" type="button">Flip Board</button>
       </div>
+
+      <h2>Engine</h2>
+      <label for="engine-side">Engine side</label>
+      <select id="engine-side">
+        <option value="b" selected>Black</option>
+        <option value="w">White</option>
+      </select>
+      <label for="engine-depth">Search depth: <span id="engine-depth-label">2</span></label>
+      <input id="engine-depth" type="range" min="1" max="3" value="2">
+      <div class="button-row compact">
+        <button id="engine-move" type="button">Engine Move</button>
+      </div>
+      <label class="inline-check"><input id="engine-auto" type="checkbox" checked> Auto reply after your move</label>
+      <p id="engine-status" class="message" aria-live="polite"></p>
 
       <h2>Move List</h2>
       <ol id="move-list" class="move-list"></ol>

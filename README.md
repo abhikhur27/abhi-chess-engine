@@ -1,32 +1,38 @@
-# Abhi Chess Studio
+﻿# Abhi Chess Engine
 
-Browser-based chess workspace with legal move handling, notation export, and board orientation controls.
+Browser-based chess workspace with legal move handling, notation tooling, and an in-browser minimax engine.
 
 ## Features
 
-- Click-to-move piece interaction with legal target hints.
-- Move history (SAN notation).
-- Board flip for white/black perspectives.
-- Export and copy:
-  - FEN
-  - PGN
+- Click-to-move board with legal-target highlighting.
+- Move history in SAN notation.
+- FEN / PGN export and copy.
 - Load custom positions from FEN.
-- Status panel for turn, check, checkmate, and draw states.
+- Board orientation flip.
+- Engine module:
+  - Select engine side (white/black)
+  - Depth-controlled search (1-3 ply)
+  - Manual `Engine Move` trigger
+  - Auto-reply mode after player moves
+- Evaluation uses piece values + piece-square tables.
 
 ## Technical Design
 
-- `index.html`: board + analysis controls and notation panes.
-- `styles.css`: responsive board and side-panel styling.
-- `script.js`: chess state management and UI rendering.
-- Powered by `chess.js` for move generation and rules.
+- `index.html`: board surface, notation tools, and engine controls.
+- `styles.css`: responsive ink-themed layout and improved board contrast.
+- `script.js`:
+  - chess.js integration for legal move generation.
+  - Alpha-beta minimax search for engine responses.
+  - UI rendering and game-state synchronization.
 
 ```mermaid
 flowchart LR
-  A[Square Click] --> B[Validate Move via chess.js]
-  B --> C[Update Game State]
-  C --> D[Render Board]
-  C --> E[Render Move List]
-  C --> F[Update FEN/PGN]
+  A[Player Move] --> B[chess.js State Update]
+  B --> C[Render Board + Notation]
+  C --> D{Auto Reply Enabled?}
+  D -->|Yes| E[Minimax Search]
+  E --> F[Engine Move]
+  F --> C
 ```
 
 ## Local Run
@@ -39,12 +45,12 @@ Open `http://localhost:8000`.
 
 ## GitHub Pages Compatibility
 
-- Static frontend only.
-- External dependency loaded from trusted CDN.
-- Publish repository root on GitHub Pages.
+- Fully static frontend.
+- CDN dependency: `chess.js` only.
+- No server runtime required.
 
 ## Future Improvements
 
-- Add engine evaluation integration.
-- Add draggable piece support.
-- Add opening explorer and move-time stats.
+- Add iterative deepening and move ordering heuristics.
+- Add evaluation breakdown panel (material vs positional score).
+- Add opening database lookup and ECO tagging.

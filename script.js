@@ -1,4 +1,4 @@
-const boardEl = document.getElementById('board');
+﻿const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const moveListEl = document.getElementById('move-list');
 const fenEl = document.getElementById('fen');
@@ -13,17 +13,91 @@ const copyFenBtn = document.getElementById('copy-fen');
 const copyPgnBtn = document.getElementById('copy-pgn');
 const loadFenBtn = document.getElementById('load-fen');
 
+const engineSideSelect = document.getElementById('engine-side');
+const engineDepthInput = document.getElementById('engine-depth');
+const engineDepthLabel = document.getElementById('engine-depth-label');
+const engineMoveBtn = document.getElementById('engine-move');
+const engineAutoCheck = document.getElementById('engine-auto');
+const engineStatusEl = document.getElementById('engine-status');
+
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const pieceSymbols = {
   w: { p: '&#9817;', r: '&#9814;', n: '&#9816;', b: '&#9815;', q: '&#9813;', k: '&#9812;' },
   b: { p: '&#9823;', r: '&#9820;', n: '&#9822;', b: '&#9821;', q: '&#9819;', k: '&#9818;' },
 };
 
+const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+
 let game = createGame();
 let orientation = 'white';
 let selectedSquare = null;
 let legalTargets = [];
 let lastMove = null;
+let engineThinking = false;
+let pendingEngineTimeout = null;
+
+const pst = {
+  p: [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [50, 50, 50, 50, 50, 50, 50, 50],
+    [10, 10, 20, 30, 30, 20, 10, 10],
+    [5, 5, 10, 25, 25, 10, 5, 5],
+    [0, 0, 0, 20, 20, 0, 0, 0],
+    [5, -5, -10, 0, 0, -10, -5, 5],
+    [5, 10, 10, -20, -20, 10, 10, 5],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  n: [
+    [-50, -40, -30, -30, -30, -30, -40, -50],
+    [-40, -20, 0, 0, 0, 0, -20, -40],
+    [-30, 0, 10, 15, 15, 10, 0, -30],
+    [-30, 5, 15, 20, 20, 15, 5, -30],
+    [-30, 0, 15, 20, 20, 15, 0, -30],
+    [-30, 5, 10, 15, 15, 10, 5, -30],
+    [-40, -20, 0, 5, 5, 0, -20, -40],
+    [-50, -40, -30, -30, -30, -30, -40, -50],
+  ],
+  b: [
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+    [-10, 0, 0, 0, 0, 0, 0, -10],
+    [-10, 0, 5, 10, 10, 5, 0, -10],
+    [-10, 5, 5, 10, 10, 5, 5, -10],
+    [-10, 0, 10, 10, 10, 10, 0, -10],
+    [-10, 10, 10, 10, 10, 10, 10, -10],
+    [-10, 5, 0, 0, 0, 0, 5, -10],
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+  ],
+  r: [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [5, 10, 10, 10, 10, 10, 10, 5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [-5, 0, 0, 0, 0, 0, 0, -5],
+    [0, 0, 0, 5, 5, 0, 0, 0],
+  ],
+  q: [
+    [-20, -10, -10, -5, -5, -10, -10, -20],
+    [-10, 0, 0, 0, 0, 0, 0, -10],
+    [-10, 0, 5, 5, 5, 5, 0, -10],
+    [-5, 0, 5, 5, 5, 5, 0, -5],
+    [0, 0, 5, 5, 5, 5, 0, -5],
+    [-10, 5, 5, 5, 5, 5, 0, -10],
+    [-10, 0, 5, 0, 0, 0, 0, -10],
+    [-20, -10, -10, -5, -5, -10, -10, -20],
+  ],
+  k: [
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-30, -40, -40, -50, -50, -40, -40, -30],
+    [-20, -30, -30, -40, -40, -30, -30, -20],
+    [-10, -20, -20, -20, -20, -20, -20, -10],
+    [20, 20, 0, 0, 0, 0, 20, 20],
+    [20, 30, 10, 0, 0, 10, 30, 20],
+  ],
+};
 
 function createGame(fen) {
   try {
@@ -35,6 +109,10 @@ function createGame(fen) {
 
 function setMessage(text) {
   messageEl.textContent = text;
+}
+
+function setEngineStatus(text) {
+  engineStatusEl.textContent = text;
 }
 
 function isCheckmate() {
@@ -53,6 +131,12 @@ function isCheck() {
   if (typeof game.in_check === 'function') return game.in_check();
   if (typeof game.isCheck === 'function') return game.isCheck();
   return false;
+}
+
+function isGameOver() {
+  if (typeof game.game_over === 'function') return game.game_over();
+  if (typeof game.isGameOver === 'function') return game.isGameOver();
+  return isCheckmate() || isDraw();
 }
 
 function orderedRanks() {
@@ -88,7 +172,7 @@ function renderBoard() {
       const piece = game.get(squareName);
       if (piece) {
         const glyph = document.createElement('span');
-        glyph.className = 'piece-glyph';
+        glyph.className = `piece-glyph ${piece.color === 'w' ? 'white' : 'black'}`;
         glyph.innerHTML = pieceSymbols[piece.color][piece.type];
         square.appendChild(glyph);
       }
@@ -159,33 +243,187 @@ function renderAll() {
 
 function getLegalTargets(square) {
   try {
-    return game
-      .moves({ square, verbose: true })
-      .map((move) => move.to);
+    return game.moves({ square, verbose: true }).map((move) => move.to);
   } catch (error) {
     return [];
   }
 }
 
+function clearSelection() {
+  selectedSquare = null;
+  legalTargets = [];
+}
+
+function shouldEngineMoveNow() {
+  if (!engineAutoCheck.checked) return false;
+  if (isGameOver()) return false;
+  return game.turn() === engineSideSelect.value;
+}
+
+function pieceSquareValue(piece, row, col) {
+  const table = pst[piece.type];
+  if (!table) return 0;
+
+  if (piece.color === 'w') {
+    return table[row][col];
+  }
+
+  return table[7 - row][col];
+}
+
+function evaluateBoard() {
+  if (isCheckmate()) {
+    return game.turn() === 'w' ? -999999 : 999999;
+  }
+
+  if (isDraw()) {
+    return 0;
+  }
+
+  const board = game.board();
+  let score = 0;
+
+  for (let row = 0; row < 8; row += 1) {
+    for (let col = 0; col < 8; col += 1) {
+      const piece = board[row][col];
+      if (!piece) continue;
+
+      const base = pieceValues[piece.type] || 0;
+      const positional = pieceSquareValue(piece, row, col);
+      const signed = base + positional;
+
+      score += piece.color === 'w' ? signed : -signed;
+    }
+  }
+
+  return score;
+}
+
+function minimax(depth, alpha, beta, maximizingWhite) {
+  if (depth === 0 || isGameOver()) {
+    return evaluateBoard();
+  }
+
+  const moves = game.moves({ verbose: true });
+
+  if (maximizingWhite) {
+    let maxEval = -Infinity;
+
+    for (const move of moves) {
+      game.move(move);
+      const evaluation = minimax(depth - 1, alpha, beta, false);
+      game.undo();
+
+      maxEval = Math.max(maxEval, evaluation);
+      alpha = Math.max(alpha, evaluation);
+      if (beta <= alpha) break;
+    }
+
+    return maxEval;
+  }
+
+  let minEval = Infinity;
+  for (const move of moves) {
+    game.move(move);
+    const evaluation = minimax(depth - 1, alpha, beta, true);
+    game.undo();
+
+    minEval = Math.min(minEval, evaluation);
+    beta = Math.min(beta, evaluation);
+    if (beta <= alpha) break;
+  }
+
+  return minEval;
+}
+
+function bestEngineMove(depth) {
+  const moves = game.moves({ verbose: true });
+  if (!moves.length) return null;
+
+  const maximizingWhite = game.turn() === 'w';
+  let bestScore = maximizingWhite ? -Infinity : Infinity;
+  let bestMoves = [];
+
+  for (const move of moves) {
+    game.move(move);
+    const score = minimax(depth - 1, -Infinity, Infinity, !maximizingWhite);
+    game.undo();
+
+    if (maximizingWhite) {
+      if (score > bestScore) {
+        bestScore = score;
+        bestMoves = [move];
+      } else if (score === bestScore) {
+        bestMoves.push(move);
+      }
+    } else if (score < bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (score === bestScore) {
+      bestMoves.push(move);
+    }
+  }
+
+  if (!bestMoves.length) return null;
+  const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+  return { move: chosen, score: bestScore };
+}
+
+function scheduleEngineMove() {
+  if (engineThinking || !shouldEngineMoveNow()) return;
+
+  engineThinking = true;
+  engineMoveBtn.disabled = true;
+  setEngineStatus(`Engine thinking at depth ${engineDepthInput.value}...`);
+
+  pendingEngineTimeout = setTimeout(() => {
+    const depth = Number(engineDepthInput.value);
+    const result = bestEngineMove(depth);
+
+    if (!result) {
+      setEngineStatus('No legal engine move available.');
+      engineThinking = false;
+      engineMoveBtn.disabled = false;
+      return;
+    }
+
+    const played = game.move({ from: result.move.from, to: result.move.to, promotion: 'q' });
+    if (played) {
+      lastMove = played;
+      clearSelection();
+      renderAll();
+      setEngineStatus(`Engine played ${played.san} (eval ${result.score}).`);
+    }
+
+    engineThinking = false;
+    engineMoveBtn.disabled = false;
+  }, 35);
+}
+
 function handleSquareClick(square) {
+  if (engineThinking) return;
+
   const piece = game.get(square);
 
   if (selectedSquare) {
     const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
     if (move) {
       lastMove = move;
-      selectedSquare = null;
-      legalTargets = [];
+      clearSelection();
       setMessage(`Move played: ${move.san}`);
       renderAll();
+
+      if (shouldEngineMoveNow()) {
+        scheduleEngineMove();
+      }
       return;
     }
   }
 
   if (piece && piece.color === game.turn()) {
     if (selectedSquare === square) {
-      selectedSquare = null;
-      legalTargets = [];
+      clearSelection();
     } else {
       selectedSquare = square;
       legalTargets = getLegalTargets(square);
@@ -194,8 +432,7 @@ function handleSquareClick(square) {
     return;
   }
 
-  selectedSquare = null;
-  legalTargets = [];
+  clearSelection();
   renderBoard();
 }
 
@@ -209,27 +446,43 @@ async function copyText(text, label) {
 }
 
 undoBtn.addEventListener('click', () => {
+  if (pendingEngineTimeout) {
+    clearTimeout(pendingEngineTimeout);
+    pendingEngineTimeout = null;
+  }
+
   const move = game.undo();
   if (!move) {
     setMessage('No moves to undo.');
     return;
   }
 
-  selectedSquare = null;
-  legalTargets = [];
+  clearSelection();
   const history = game.history({ verbose: true });
   lastMove = history.length ? history[history.length - 1] : null;
   setMessage(`Undid move: ${move.san}`);
+  setEngineStatus('Engine state updated after undo.');
   renderAll();
 });
 
 resetBtn.addEventListener('click', () => {
+  if (pendingEngineTimeout) {
+    clearTimeout(pendingEngineTimeout);
+    pendingEngineTimeout = null;
+  }
+
   game.reset();
-  selectedSquare = null;
-  legalTargets = [];
+  clearSelection();
   lastMove = null;
+  engineThinking = false;
+  engineMoveBtn.disabled = false;
   setMessage('Game reset to initial position.');
+  setEngineStatus('Engine ready.');
   renderAll();
+
+  if (shouldEngineMoveNow()) {
+    scheduleEngineMove();
+  }
 });
 
 flipBtn.addEventListener('click', () => {
@@ -255,16 +508,47 @@ loadFenBtn.addEventListener('click', () => {
       return;
     }
 
-    selectedSquare = null;
-    legalTargets = [];
+    clearSelection();
     const history = game.history({ verbose: true });
     lastMove = history.length ? history[history.length - 1] : null;
     setMessage('FEN loaded successfully.');
+    setEngineStatus('Position loaded. Engine ready.');
     renderAll();
+
+    if (shouldEngineMoveNow()) {
+      scheduleEngineMove();
+    }
   } catch (error) {
     setMessage('Invalid FEN. Could not load position.');
   }
 });
 
+engineDepthInput.addEventListener('input', () => {
+  engineDepthLabel.textContent = engineDepthInput.value;
+});
+
+engineMoveBtn.addEventListener('click', () => {
+  if (game.turn() !== engineSideSelect.value) {
+    setEngineStatus(`It is ${game.turn() === 'w' ? 'White' : 'Black'} to move. Switch engine side or play a move first.`);
+    return;
+  }
+
+  scheduleEngineMove();
+});
+
+engineSideSelect.addEventListener('change', () => {
+  setEngineStatus(`Engine side set to ${engineSideSelect.value === 'w' ? 'White' : 'Black'}.`);
+
+  if (shouldEngineMoveNow()) {
+    scheduleEngineMove();
+  }
+});
+
 renderAll();
+engineDepthLabel.textContent = engineDepthInput.value;
 setMessage('Ready. Select a piece to view legal moves.');
+setEngineStatus('Engine ready. Auto reply is on by default.');
+
+if (shouldEngineMoveNow()) {
+  scheduleEngineMove();
+}
