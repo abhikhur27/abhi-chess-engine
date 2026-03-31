@@ -5,6 +5,7 @@ const fenEl = document.getElementById('fen');
 const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
 const positionSummaryEl = document.getElementById('position-summary');
+const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const messageEl = document.getElementById('message');
 
 const undoBtn = document.getElementById('undo');
@@ -236,34 +237,6 @@ function updateStatus() {
   undoBtn.disabled = game.history().length === 0;
 }
 
-function renderPositionSummary() {
-  const board = game.board();
-  const totals = { w: 0, b: 0 };
-  const counts = { w: 0, b: 0 };
-
-  board.forEach((row) => {
-    row.forEach((piece) => {
-      if (!piece) return;
-      totals[piece.color] += pieceValues[piece.type] || 0;
-      counts[piece.color] += 1;
-    });
-  });
-
-  const evaluation = evaluateBoard();
-  const evalLabel =
-    evaluation === 0
-      ? 'Equal'
-      : evaluation > 0
-        ? `White +${(evaluation / 100).toFixed(1)}`
-        : `Black +${(Math.abs(evaluation) / 100).toFixed(1)}`;
-
-  positionSummaryEl.innerHTML = `
-    <p>Material: White ${totals.w} | Black ${totals.b}</p>
-    <p>Pieces: White ${counts.w} | Black ${counts.b}</p>
-    <p>Static eval: ${evalLabel}</p>
-  `;
-}
-
 function renderAll() {
   renderBoard();
   renderMoveList();
@@ -301,17 +274,32 @@ function pieceSquareValue(piece, row, col) {
   return table[7 - row][col];
 }
 
-function evaluateBoard() {
+function evaluateBoardDetailed() {
   if (isCheckmate()) {
-    return game.turn() === 'w' ? -999999 : 999999;
+    return {
+      total: game.turn() === 'w' ? -999999 : 999999,
+      materialWhite: 0,
+      materialBlack: 0,
+      positionalWhite: 0,
+      positionalBlack: 0,
+    };
   }
 
   if (isDraw()) {
-    return 0;
+    return {
+      total: 0,
+      materialWhite: 0,
+      materialBlack: 0,
+      positionalWhite: 0,
+      positionalBlack: 0,
+    };
   }
 
   const board = game.board();
-  let score = 0;
+  let materialWhite = 0;
+  let materialBlack = 0;
+  let positionalWhite = 0;
+  let positionalBlack = 0;
 
   for (let row = 0; row < 8; row += 1) {
     for (let col = 0; col < 8; col += 1) {
@@ -320,13 +308,67 @@ function evaluateBoard() {
 
       const base = pieceValues[piece.type] || 0;
       const positional = pieceSquareValue(piece, row, col);
-      const signed = base + positional;
-
-      score += piece.color === 'w' ? signed : -signed;
+      if (piece.color === 'w') {
+        materialWhite += base;
+        positionalWhite += positional;
+      } else {
+        materialBlack += base;
+        positionalBlack += positional;
+      }
     }
   }
 
-  return score;
+  return {
+    total: materialWhite + positionalWhite - materialBlack - positionalBlack,
+    materialWhite,
+    materialBlack,
+    positionalWhite,
+    positionalBlack,
+  };
+}
+
+function evaluateBoard() {
+  return evaluateBoardDetailed().total;
+}
+
+function renderPositionSummary() {
+  const board = game.board();
+  const totals = { w: 0, b: 0 };
+  const counts = { w: 0, b: 0 };
+
+  board.forEach((row) => {
+    row.forEach((piece) => {
+      if (!piece) return;
+      totals[piece.color] += pieceValues[piece.type] || 0;
+      counts[piece.color] += 1;
+    });
+  });
+
+  const evaluation = evaluateBoardDetailed();
+  const evalLabel =
+    evaluation.total === 0
+      ? 'Equal'
+      : evaluation.total > 0
+        ? `White +${(evaluation.total / 100).toFixed(1)}`
+        : `Black +${(Math.abs(evaluation.total) / 100).toFixed(1)}`;
+
+  positionSummaryEl.innerHTML = `
+    <p>Material: White ${totals.w} | Black ${totals.b}</p>
+    <p>Pieces: White ${counts.w} | Black ${counts.b}</p>
+    <p>Static eval: ${evalLabel}</p>
+  `;
+
+  if (evaluationBreakdownEl) {
+    const materialEdge = evaluation.materialWhite - evaluation.materialBlack;
+    const positionalEdge = evaluation.positionalWhite - evaluation.positionalBlack;
+    const tempoSide = game.turn() === 'w' ? 'White' : 'Black';
+
+    evaluationBreakdownEl.innerHTML = `
+      <p>Material term: ${materialEdge === 0 ? 'Equal' : materialEdge > 0 ? `White +${(materialEdge / 100).toFixed(1)}` : `Black +${(Math.abs(materialEdge) / 100).toFixed(1)}`}</p>
+      <p>Positional term: ${positionalEdge === 0 ? 'Equal' : positionalEdge > 0 ? `White +${(positionalEdge / 100).toFixed(1)}` : `Black +${(Math.abs(positionalEdge) / 100).toFixed(1)}`}</p>
+      <p>Side to move: ${tempoSide}</p>
+    `;
+  }
 }
 
 function minimax(depth, alpha, beta, maximizingWhite) {

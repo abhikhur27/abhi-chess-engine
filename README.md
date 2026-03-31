@@ -15,6 +15,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
   - Manual `Engine Move` trigger
   - Auto-reply mode after player moves
 - Evaluation uses piece values + piece-square tables.
+- Evaluation panel separates material and positional terms for easier engine inspection.
 
 ## Technical Design
 
