@@ -244,6 +244,23 @@ select {
   font-size: 0.86rem;
 }
 
+.position-summary {
+  margin-top: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0f1420;
+  padding: 0.55rem 0.65rem;
+}
+
+.position-summary p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.position-summary p + p {
+  margin-top: 0.28rem;
+}
+
 textarea {
   width: 100%;
   margin-top: 0.4rem;

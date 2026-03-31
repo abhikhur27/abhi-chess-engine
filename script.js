@@ -4,6 +4,7 @@ const moveListEl = document.getElementById('move-list');
 const fenEl = document.getElementById('fen');
 const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
+const positionSummaryEl = document.getElementById('position-summary');
 const messageEl = document.getElementById('message');
 
 const undoBtn = document.getElementById('undo');
@@ -235,10 +236,39 @@ function updateStatus() {
   undoBtn.disabled = game.history().length === 0;
 }
 
+function renderPositionSummary() {
+  const board = game.board();
+  const totals = { w: 0, b: 0 };
+  const counts = { w: 0, b: 0 };
+
+  board.forEach((row) => {
+    row.forEach((piece) => {
+      if (!piece) return;
+      totals[piece.color] += pieceValues[piece.type] || 0;
+      counts[piece.color] += 1;
+    });
+  });
+
+  const evaluation = evaluateBoard();
+  const evalLabel =
+    evaluation === 0
+      ? 'Equal'
+      : evaluation > 0
+        ? `White +${(evaluation / 100).toFixed(1)}`
+        : `Black +${(Math.abs(evaluation) / 100).toFixed(1)}`;
+
+  positionSummaryEl.innerHTML = `
+    <p>Material: White ${totals.w} | Black ${totals.b}</p>
+    <p>Pieces: White ${counts.w} | Black ${counts.b}</p>
+    <p>Static eval: ${evalLabel}</p>
+  `;
+}
+
 function renderAll() {
   renderBoard();
   renderMoveList();
   updateStatus();
+  renderPositionSummary();
 }
 
 function getLegalTargets(square) {
