@@ -7,6 +7,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Click-to-move board with legal-target highlighting.
 - Move history in SAN notation.
 - FEN / PGN export and copy.
+- Shareable URL state for custom positions and board orientation.
 - Load custom positions from FEN.
 - Board orientation flip.
 - Engine module:

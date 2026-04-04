@@ -12,6 +12,7 @@ const undoBtn = document.getElementById('undo');
 const resetBtn = document.getElementById('reset');
 const flipBtn = document.getElementById('flip');
 const copyFenBtn = document.getElementById('copy-fen');
+const copyShareLinkBtn = document.getElementById('copy-share-link');
 const copyPgnBtn = document.getElementById('copy-pgn');
 const loadFenBtn = document.getElementById('load-fen');
 
@@ -37,6 +38,7 @@ let legalTargets = [];
 let lastMove = null;
 let engineThinking = false;
 let pendingEngineTimeout = null;
+const START_FEN = createGame().fen();
 
 const pst = {
   p: [
@@ -233,6 +235,7 @@ function updateStatus() {
   statusEl.textContent = status;
   fenEl.value = game.fen();
   pgnEl.value = game.pgn({ max_width: 72, newline_char: '\n' });
+  syncUrlState();
 
   undoBtn.disabled = game.history().length === 0;
 }
@@ -255,6 +258,46 @@ function getLegalTargets(square) {
 function clearSelection() {
   selectedSquare = null;
   legalTargets = [];
+}
+
+function syncUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const fen = game.fen();
+
+  if (fen === START_FEN) {
+    params.delete('fen');
+  } else {
+    params.set('fen', fen);
+  }
+
+  if (orientation === 'black') {
+    params.set('orientation', 'black');
+  } else {
+    params.delete('orientation');
+  }
+
+  const nextUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+  window.history.replaceState({}, '', nextUrl);
+}
+
+function hydrateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const fen = params.get('fen');
+  const orientationParam = params.get('orientation');
+
+  if (fen) {
+    try {
+      if (game.load(fen)) {
+        setMessage('Loaded shared position from URL.');
+      }
+    } catch (error) {
+      setMessage('Could not load FEN from URL.');
+    }
+  }
+
+  if (orientationParam === 'black') {
+    orientation = 'black';
+  }
 }
 
 function shouldEngineMoveNow() {
@@ -561,9 +604,14 @@ flipBtn.addEventListener('click', () => {
   orientation = orientation === 'white' ? 'black' : 'white';
   renderBoard();
   setMessage(`Board flipped to ${orientation} orientation.`);
+  syncUrlState();
 });
 
 copyFenBtn.addEventListener('click', () => copyText(game.fen(), 'FEN'));
+copyShareLinkBtn.addEventListener('click', () => {
+  syncUrlState();
+  copyText(window.location.href, 'share link');
+});
 copyPgnBtn.addEventListener('click', () => copyText(game.pgn({ max_width: 72, newline_char: '\n' }), 'PGN'));
 
 loadFenBtn.addEventListener('click', () => {
@@ -616,6 +664,7 @@ engineSideSelect.addEventListener('change', () => {
   }
 });
 
+hydrateFromUrl();
 renderAll();
 engineDepthLabel.textContent = engineDepthInput.value;
 setMessage('Ready. Select a piece to view legal moves.');
