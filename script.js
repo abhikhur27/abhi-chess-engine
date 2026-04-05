@@ -6,6 +6,7 @@ const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
 const positionSummaryEl = document.getElementById('position-summary');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
+const openingSummaryEl = document.getElementById('opening-summary');
 const messageEl = document.getElementById('message');
 
 const undoBtn = document.getElementById('undo');
@@ -30,6 +31,56 @@ const pieceSymbols = {
 };
 
 const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+const openingBook = [
+  {
+    name: 'Ruy Lopez',
+    family: 'Open Game',
+    cue: 'White develops actively and pins the c6 knight to pressure e5.',
+    san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5'],
+  },
+  {
+    name: 'Italian Game',
+    family: 'Open Game',
+    cue: 'Fast piece development with pressure on the f7 square.',
+    san: ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4'],
+  },
+  {
+    name: 'Sicilian Defense',
+    family: 'Semi-open Game',
+    cue: 'Black fights asymmetrically for central control and queenside counterplay.',
+    san: ['e4', 'c5'],
+  },
+  {
+    name: 'French Defense',
+    family: 'Semi-open Game',
+    cue: 'Black accepts a cramped structure in return for a resilient center.',
+    san: ['e4', 'e6'],
+  },
+  {
+    name: 'Caro-Kann Defense',
+    family: 'Semi-open Game',
+    cue: 'Black builds a durable center with c6 before challenging e4.',
+    san: ['e4', 'c6'],
+  },
+  {
+    name: 'Queen\'s Gambit',
+    family: 'Closed Game',
+    cue: 'White offers the c-pawn to accelerate central influence and development.',
+    san: ['d4', 'd5', 'c4'],
+  },
+  {
+    name: 'King\'s Indian Defense',
+    family: 'Indian Defense',
+    cue: 'Black allows space early and counters with kingside pressure later.',
+    san: ['d4', 'Nf6', 'c4', 'g6'],
+  },
+  {
+    name: 'English Opening',
+    family: 'Flank Opening',
+    cue: 'White controls d5 from the side and keeps the center flexible.',
+    san: ['c4'],
+  },
+];
 
 let game = createGame();
 let orientation = 'white';
@@ -374,6 +425,41 @@ function evaluateBoard() {
   return evaluateBoardDetailed().total;
 }
 
+function normalizeSan(move) {
+  return move.replace(/[+#?!]+/g, '');
+}
+
+function identifyOpening() {
+  const history = game.history().map(normalizeSan);
+  if (!history.length) {
+    return {
+      name: 'Start position',
+      family: 'Unclassified',
+      cue: 'No opening moves played yet.',
+      matchedPly: 0,
+    };
+  }
+
+  let bestMatch = null;
+  openingBook.forEach((entry) => {
+    const matches = entry.san.every((move, index) => history[index] === move);
+    if (matches && (!bestMatch || entry.san.length > bestMatch.matchedPly)) {
+      bestMatch = { ...entry, matchedPly: entry.san.length };
+    }
+  });
+
+  if (bestMatch) {
+    return bestMatch;
+  }
+
+  return {
+    name: 'Out of book',
+    family: 'Custom line',
+    cue: 'The move order no longer matches the small opening guide built into this board.',
+    matchedPly: 0,
+  };
+}
+
 function renderPositionSummary() {
   const board = game.board();
   const totals = { w: 0, b: 0 };
@@ -410,6 +496,17 @@ function renderPositionSummary() {
       <p>Material term: ${materialEdge === 0 ? 'Equal' : materialEdge > 0 ? `White +${(materialEdge / 100).toFixed(1)}` : `Black +${(Math.abs(materialEdge) / 100).toFixed(1)}`}</p>
       <p>Positional term: ${positionalEdge === 0 ? 'Equal' : positionalEdge > 0 ? `White +${(positionalEdge / 100).toFixed(1)}` : `Black +${(Math.abs(positionalEdge) / 100).toFixed(1)}`}</p>
       <p>Side to move: ${tempoSide}</p>
+    `;
+  }
+
+  if (openingSummaryEl) {
+    const opening = identifyOpening();
+    const historyCount = game.history().length;
+    openingSummaryEl.innerHTML = `
+      <p>Line: ${opening.name}</p>
+      <p>Family: ${opening.family}</p>
+      <p>${opening.cue}</p>
+      <p>Book match depth: ${opening.matchedPly} ply | Moves played: ${historyCount}</p>
     `;
   }
 }

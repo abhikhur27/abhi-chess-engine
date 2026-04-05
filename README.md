@@ -17,6 +17,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
   - Auto-reply mode after player moves
 - Evaluation uses piece values + piece-square tables.
 - Evaluation panel separates material and positional terms for easier engine inspection.
+- Opening guide identifies common lines from the current SAN move order.
 
 ## Technical Design
 
