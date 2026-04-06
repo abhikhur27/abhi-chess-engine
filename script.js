@@ -7,6 +7,7 @@ const fenInput = document.getElementById('fen-input');
 const positionSummaryEl = document.getElementById('position-summary');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const openingSummaryEl = document.getElementById('opening-summary');
+const engineCandidatesEl = document.getElementById('engine-candidates');
 const messageEl = document.getElementById('message');
 
 const undoBtn = document.getElementById('undo');
@@ -509,6 +510,28 @@ function renderPositionSummary() {
       <p>Book match depth: ${opening.matchedPly} ply | Moves played: ${historyCount}</p>
     `;
   }
+
+  if (engineCandidatesEl) {
+    const ranked = rankEngineMoves(Number(engineDepthInput.value), 3);
+    if (!ranked.length) {
+      engineCandidatesEl.innerHTML = '<p>No legal continuations to rank from this position.</p>';
+    } else {
+      const bestScore = ranked[0].score;
+      engineCandidatesEl.innerHTML = ranked
+        .map((entry, index) => {
+          const edge =
+            entry.score === 0
+              ? 'Equal'
+              : entry.score > 0
+                ? `White +${(entry.score / 100).toFixed(1)}`
+                : `Black +${(Math.abs(entry.score) / 100).toFixed(1)}`;
+          const margin = Math.abs(entry.score - bestScore);
+          const gap = index === 0 ? 'Best line' : `Gap ${Math.round(margin)} cp`;
+          return `<p>${index + 1}. ${entry.san} | ${edge} | ${gap}</p>`;
+        })
+        .join('');
+    }
+  }
 }
 
 function minimax(depth, alpha, beta, maximizingWhite) {
@@ -548,38 +571,34 @@ function minimax(depth, alpha, beta, maximizingWhite) {
   return minEval;
 }
 
-function bestEngineMove(depth) {
+function rankEngineMoves(depth, limit = 3) {
   const moves = game.moves({ verbose: true });
-  if (!moves.length) return null;
+  if (!moves.length) return [];
 
   const maximizingWhite = game.turn() === 'w';
-  let bestScore = maximizingWhite ? -Infinity : Infinity;
-  let bestMoves = [];
+  const ranked = [];
 
   for (const move of moves) {
     game.move(move);
     const score = minimax(depth - 1, -Infinity, Infinity, !maximizingWhite);
+    const san = game.history().slice(-1)[0];
     game.undo();
-
-    if (maximizingWhite) {
-      if (score > bestScore) {
-        bestScore = score;
-        bestMoves = [move];
-      } else if (score === bestScore) {
-        bestMoves.push(move);
-      }
-    } else if (score < bestScore) {
-      bestScore = score;
-      bestMoves = [move];
-    } else if (score === bestScore) {
-      bestMoves.push(move);
-    }
+    ranked.push({ move, score, san });
   }
 
-  if (!bestMoves.length) return null;
+  ranked.sort((a, b) => (maximizingWhite ? b.score - a.score : a.score - b.score));
+  return ranked.slice(0, limit);
+}
+
+function bestEngineMove(depth) {
+  const ranked = rankEngineMoves(depth, 4);
+  if (!ranked.length) return null;
+
+  const bestScore = ranked[0].score;
+  const bestMoves = ranked.filter((entry) => entry.score === bestScore);
   const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
 
-  return { move: chosen, score: bestScore };
+  return { move: chosen.move, score: chosen.score };
 }
 
 function scheduleEngineMove() {
