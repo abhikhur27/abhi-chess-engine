@@ -5,6 +5,7 @@ const fenEl = document.getElementById('fen');
 const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
 const positionSummaryEl = document.getElementById('position-summary');
+const tacticalPressureEl = document.getElementById('tactical-pressure');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const openingSummaryEl = document.getElementById('opening-summary');
 const engineCandidatesEl = document.getElementById('engine-candidates');
@@ -487,6 +488,25 @@ function renderPositionSummary() {
     <p>Pieces: White ${counts.w} | Black ${counts.b}</p>
     <p>Static eval: ${evalLabel}</p>
   `;
+
+  if (tacticalPressureEl) {
+    const legalMoves = game.moves({ verbose: true });
+    const captureCount = legalMoves.filter((move) => move.flags.includes('c') || move.flags.includes('e')).length;
+    const checkMoves = legalMoves.reduce((count, move) => {
+      game.move(move);
+      const san = game.history().slice(-1)[0] || '';
+      game.undo();
+      return count + (san.includes('+') || san.includes('#') ? 1 : 0);
+    }, 0);
+    const sideToMove = game.turn() === 'w' ? 'White' : 'Black';
+    const phase = counts.w + counts.b <= 10 ? 'Endgame' : counts.w + counts.b <= 20 ? 'Middlegame' : 'Opening';
+
+    tacticalPressureEl.innerHTML = `
+      <p>Side to move: ${sideToMove}</p>
+      <p>Legal moves: ${legalMoves.length} | Captures: ${captureCount}</p>
+      <p>Checking continuations: ${checkMoves} | Phase: ${phase}</p>
+    `;
+  }
 
   if (evaluationBreakdownEl) {
     const materialEdge = evaluation.materialWhite - evaluation.materialBlack;
