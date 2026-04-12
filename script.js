@@ -8,6 +8,7 @@ const positionSummaryEl = document.getElementById('position-summary');
 const tacticalPressureEl = document.getElementById('tactical-pressure');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const openingSummaryEl = document.getElementById('opening-summary');
+const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
 const messageEl = document.getElementById('message');
 
@@ -89,6 +90,7 @@ let orientation = 'white';
 let selectedSquare = null;
 let legalTargets = [];
 let lastMove = null;
+let lastMoveVerdict = null;
 let engineThinking = false;
 let pendingEngineTimeout = null;
 const START_FEN = createGame().fen();
@@ -427,6 +429,11 @@ function evaluateBoard() {
   return evaluateBoardDetailed().total;
 }
 
+function formatEvalLabel(score) {
+  if (score === 0) return 'Equal';
+  return score > 0 ? `White +${(score / 100).toFixed(1)}` : `Black +${(Math.abs(score) / 100).toFixed(1)}`;
+}
+
 function normalizeSan(move) {
   return move.replace(/[+#?!]+/g, '');
 }
@@ -531,6 +538,18 @@ function renderPositionSummary() {
     `;
   }
 
+  if (moveVerdictEl) {
+    if (!lastMoveVerdict) {
+      moveVerdictEl.innerHTML = '<p>Play a move to compare it against the engine candidate list from the prior position.</p>';
+    } else {
+      moveVerdictEl.innerHTML = `
+        <p>Last move: ${lastMoveVerdict.san}</p>
+        <p>Verdict: ${lastMoveVerdict.label} | Eval after move: ${formatEvalLabel(lastMoveVerdict.score)}</p>
+        <p>${lastMoveVerdict.detail}</p>
+      `;
+    }
+  }
+
   if (engineCandidatesEl) {
     const ranked = rankEngineMoves(Number(engineDepthInput.value), 3);
     if (!ranked.length) {
@@ -540,11 +559,7 @@ function renderPositionSummary() {
       engineCandidatesEl.innerHTML = ranked
         .map((entry, index) => {
           const edge =
-            entry.score === 0
-              ? 'Equal'
-              : entry.score > 0
-                ? `White +${(entry.score / 100).toFixed(1)}`
-                : `Black +${(Math.abs(entry.score) / 100).toFixed(1)}`;
+            formatEvalLabel(entry.score);
           const margin = Math.abs(entry.score - bestScore);
           const gap = index === 0 ? 'Best line' : `Gap ${Math.round(margin)} cp`;
           return `<p>${index + 1}. ${entry.san} | ${edge} | ${gap}</p>`;
@@ -621,6 +636,49 @@ function bestEngineMove(depth) {
   return { move: chosen.move, score: chosen.score };
 }
 
+function previewMoveVerdict(candidateMove) {
+  const depth = Number(engineDepthInput.value);
+  const ranked = rankEngineMoves(depth, 5);
+  if (!ranked.length) return null;
+
+  const maximizingWhite = game.turn() === 'w';
+  const best = ranked[0];
+  let selected = ranked.find(
+    (entry) =>
+      entry.move.from === candidateMove.from &&
+      entry.move.to === candidateMove.to &&
+      (entry.move.promotion || 'q') === (candidateMove.promotion || 'q')
+  );
+
+  if (!selected) {
+    const applied = game.move(candidateMove);
+    if (!applied) return null;
+    const score = minimax(depth - 1, -Infinity, Infinity, !maximizingWhite);
+    const san = game.history().slice(-1)[0];
+    game.undo();
+    selected = { score, san };
+  }
+
+  const gap = Math.abs(selected.score - best.score);
+  let label = 'Best';
+  if (gap > 180) label = 'Mistake';
+  else if (gap > 80) label = 'Inaccuracy';
+  else if (gap > 30) label = 'Solid';
+  else if (gap > 0) label = 'Excellent';
+
+  const detail =
+    gap === 0
+      ? 'This matched the engine’s top-ranked continuation from the previous position.'
+      : `${Math.round(gap)} cp behind the best line. Preferred move: ${best.san}.`;
+
+  return {
+    san: selected.san,
+    score: selected.score,
+    label,
+    detail,
+  };
+}
+
 function scheduleEngineMove() {
   if (engineThinking || !shouldEngineMoveNow()) return;
 
@@ -639,6 +697,7 @@ function scheduleEngineMove() {
       return;
     }
 
+    lastMoveVerdict = previewMoveVerdict({ from: result.move.from, to: result.move.to, promotion: 'q' });
     const played = game.move({ from: result.move.from, to: result.move.to, promotion: 'q' });
     if (played) {
       lastMove = played;
@@ -658,9 +717,11 @@ function handleSquareClick(square) {
   const piece = game.get(square);
 
   if (selectedSquare) {
+    const verdict = previewMoveVerdict({ from: selectedSquare, to: square, promotion: 'q' });
     const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
     if (move) {
       lastMove = move;
+      lastMoveVerdict = verdict;
       clearSelection();
       setMessage(`Move played: ${move.san}`);
       renderAll();
@@ -711,6 +772,7 @@ undoBtn.addEventListener('click', () => {
   clearSelection();
   const history = game.history({ verbose: true });
   lastMove = history.length ? history[history.length - 1] : null;
+  lastMoveVerdict = null;
   setMessage(`Undid move: ${move.san}`);
   setEngineStatus('Engine state updated after undo.');
   renderAll();
@@ -725,6 +787,7 @@ resetBtn.addEventListener('click', () => {
   game.reset();
   clearSelection();
   lastMove = null;
+  lastMoveVerdict = null;
   engineThinking = false;
   engineMoveBtn.disabled = false;
   setMessage('Game reset to initial position.');
@@ -767,6 +830,7 @@ loadFenBtn.addEventListener('click', () => {
     clearSelection();
     const history = game.history({ verbose: true });
     lastMove = history.length ? history[history.length - 1] : null;
+    lastMoveVerdict = null;
     setMessage('FEN loaded successfully.');
     setEngineStatus('Position loaded. Engine ready.');
     renderAll();
