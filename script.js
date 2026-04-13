@@ -7,6 +7,7 @@ const fenInput = document.getElementById('fen-input');
 const positionSummaryEl = document.getElementById('position-summary');
 const tacticalPressureEl = document.getElementById('tactical-pressure');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
+const positionPlanEl = document.getElementById('position-plan');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
@@ -513,6 +514,28 @@ function renderPositionSummary() {
       <p>Legal moves: ${legalMoves.length} | Captures: ${captureCount}</p>
       <p>Checking continuations: ${checkMoves} | Phase: ${phase}</p>
     `;
+
+    if (positionPlanEl) {
+      const edgeSide = evaluation.total === 0 ? sideToMove : evaluation.total > 0 ? 'White' : 'Black';
+      const caution =
+        captureCount >= 6
+          ? 'The position is tactically sharp, so loose pieces and forcing lines matter more than long plans.'
+          : checkMoves >= 2
+            ? 'Checking resources are available, so king safety should be verified before making a slow move.'
+            : 'The position is comparatively quiet, so coordination and pawn structure are the main levers.';
+      const plan =
+        phase === 'Opening'
+          ? `${edgeSide} should prioritize development and king safety before hunting material.`
+          : phase === 'Middlegame'
+            ? `${edgeSide} should improve the worst-placed piece and only trade when it preserves the evaluation edge.`
+            : `${edgeSide} should simplify into favorable races and activate the king aggressively.`;
+
+      positionPlanEl.innerHTML = `
+        <p>Initiative: ${sideToMove} to move with ${formatEvalLabel(evaluation.total)} on the board.</p>
+        <p>Plan cue: ${plan}</p>
+        <p>Watch-out: ${caution}</p>
+      `;
+    }
   }
 
   if (evaluationBreakdownEl) {
