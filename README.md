@@ -18,6 +18,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Evaluation uses piece values + piece-square tables.
 - Evaluation panel separates material and positional terms for easier engine inspection.
 - Tactical pressure panel surfaces mobility, capture density, checking moves, and rough game phase.
+- King safety board estimates pawn shield quality and nearby enemy pressure around both kings.
 - Opening guide identifies common lines from the current SAN move order.
 
 ## Technical Design

@@ -8,6 +8,7 @@ const positionSummaryEl = document.getElementById('position-summary');
 const tacticalPressureEl = document.getElementById('tactical-pressure');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const positionPlanEl = document.getElementById('position-plan');
+const kingSafetyBoardEl = document.getElementById('king-safety-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
@@ -547,6 +548,66 @@ function renderPositionSummary() {
       <p>Material term: ${materialEdge === 0 ? 'Equal' : materialEdge > 0 ? `White +${(materialEdge / 100).toFixed(1)}` : `Black +${(Math.abs(materialEdge) / 100).toFixed(1)}`}</p>
       <p>Positional term: ${positionalEdge === 0 ? 'Equal' : positionalEdge > 0 ? `White +${(positionalEdge / 100).toFixed(1)}` : `Black +${(Math.abs(positionalEdge) / 100).toFixed(1)}`}</p>
       <p>Side to move: ${tempoSide}</p>
+    `;
+  }
+
+  if (kingSafetyBoardEl) {
+    const kings = { w: null, b: null };
+    board.forEach((row, rowIndex) => {
+      row.forEach((piece, colIndex) => {
+        if (piece?.type === 'k') {
+          kings[piece.color] = { row: rowIndex, col: colIndex };
+        }
+      });
+    });
+
+    function fileLetter(col) {
+      return files[Math.max(0, Math.min(files.length - 1, col))];
+    }
+
+    function pawnShield(color, kingSquare) {
+      if (!kingSquare) return 0;
+      const direction = color === 'w' ? -1 : 1;
+      let shield = 0;
+      for (let delta = -1; delta <= 1; delta += 1) {
+        const row = kingSquare.row + direction;
+        const col = kingSquare.col + delta;
+        const piece = board[row]?.[col];
+        if (piece && piece.color === color && piece.type === 'p') shield += 1;
+      }
+      return shield;
+    }
+
+    function nearbyAttackers(color, kingSquare) {
+      if (!kingSquare) return 0;
+      const enemy = color === 'w' ? 'b' : 'w';
+      let attackers = 0;
+      for (let row = Math.max(0, kingSquare.row - 2); row <= Math.min(7, kingSquare.row + 2); row += 1) {
+        for (let col = Math.max(0, kingSquare.col - 2); col <= Math.min(7, kingSquare.col + 2); col += 1) {
+          const piece = board[row]?.[col];
+          if (piece && piece.color === enemy) attackers += 1;
+        }
+      }
+      return attackers;
+    }
+
+    const whiteShield = pawnShield('w', kings.w);
+    const blackShield = pawnShield('b', kings.b);
+    const whitePressure = nearbyAttackers('w', kings.w);
+    const blackPressure = nearbyAttackers('b', kings.b);
+    const whiteFile = kings.w ? fileLetter(kings.w.col) : '?';
+    const blackFile = kings.b ? fileLetter(kings.b.col) : '?';
+
+    kingSafetyBoardEl.innerHTML = `
+      <p>White king: ${whiteFile}-file with ${whiteShield}/3 pawn shield and ${whitePressure} nearby attacker${whitePressure === 1 ? '' : 's'}.</p>
+      <p>Black king: ${blackFile}-file with ${blackShield}/3 pawn shield and ${blackPressure} nearby attacker${blackPressure === 1 ? '' : 's'}.</p>
+      <p>${
+        whitePressure === blackPressure && whiteShield === blackShield
+          ? 'King safety is roughly balanced right now; the next tactical mistake matters more than static shelter.'
+          : whitePressure - whiteShield > blackPressure - blackShield
+            ? 'White is carrying the shakier shelter, so forcing trades or checks against the white king deserves attention.'
+            : 'Black is carrying the shakier shelter, so the initiative should aim at black king exposure first.'
+      }</p>
     `;
   }
 
