@@ -841,6 +841,11 @@ async function copyText(text, label) {
   }
 }
 
+function isEditableTarget(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+}
+
 undoBtn.addEventListener('click', () => {
   if (pendingEngineTimeout) {
     clearTimeout(pendingEngineTimeout);
@@ -945,6 +950,32 @@ engineSideSelect.addEventListener('change', () => {
 
   if (shouldEngineMoveNow()) {
     scheduleEngineMove();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || isEditableTarget(event.target)) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+  if (key === 'u') {
+    event.preventDefault();
+    undoBtn.click();
+  } else if (key === 'r') {
+    event.preventDefault();
+    resetBtn.click();
+  } else if (key === 'f') {
+    event.preventDefault();
+    flipBtn.click();
+  } else if (key === 'e') {
+    event.preventDefault();
+    engineMoveBtn.click();
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    clearSelection();
+    renderBoard();
+    setMessage('Selection cleared.');
   }
 });
 
