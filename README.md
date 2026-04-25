@@ -20,6 +20,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Tactical pressure panel surfaces mobility, capture density, checking moves, and rough game phase.
 - King safety board estimates pawn shield quality and nearby enemy pressure around both kings.
 - Opening guide identifies common lines from the current SAN move order.
+- Engine line preview extends the top continuation into a short best-line sequence for portfolio walkthroughs.
 
 ## Technical Design
 

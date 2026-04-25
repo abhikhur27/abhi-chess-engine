@@ -12,6 +12,7 @@ const kingSafetyBoardEl = document.getElementById('king-safety-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
+const engineLinePreviewEl = document.getElementById('engine-line-preview');
 const messageEl = document.getElementById('message');
 
 const undoBtn = document.getElementById('undo');
@@ -651,6 +652,17 @@ function renderPositionSummary() {
         .join('');
     }
   }
+
+  if (engineLinePreviewEl) {
+    const previewLine = buildEngineLinePreview(Number(engineDepthInput.value), 4);
+    if (!previewLine.length) {
+      engineLinePreviewEl.innerHTML = '<p>No forcing line available from this position.</p>';
+    } else {
+      engineLinePreviewEl.innerHTML = previewLine
+        .map((entry, index) => `<p>${index + 1}. ${entry.side}: ${entry.san} | ${formatEvalLabel(entry.score)}</p>`)
+        .join('');
+    }
+  }
 }
 
 function minimax(depth, alpha, beta, maximizingWhite) {
@@ -707,6 +719,36 @@ function rankEngineMoves(depth, limit = 3) {
 
   ranked.sort((a, b) => (maximizingWhite ? b.score - a.score : a.score - b.score));
   return ranked.slice(0, limit);
+}
+
+function buildEngineLinePreview(depth, plies = 4) {
+  const playedMoves = [];
+  const preview = [];
+
+  for (let index = 0; index < plies; index += 1) {
+    const ranked = rankEngineMoves(depth, 1);
+    if (!ranked.length) break;
+
+    const best = ranked[0];
+    preview.push({
+      side: game.turn() === 'w' ? 'White' : 'Black',
+      san: best.san,
+      score: best.score,
+    });
+
+    const played = game.move(best.move);
+    if (!played) break;
+    playedMoves.push(played);
+
+    if (isGameOver()) break;
+  }
+
+  while (playedMoves.length) {
+    game.undo();
+    playedMoves.pop();
+  }
+
+  return preview;
 }
 
 function bestEngineMove(depth) {
