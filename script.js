@@ -6,6 +6,7 @@ const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
 const positionSummaryEl = document.getElementById('position-summary');
 const tacticalPressureEl = document.getElementById('tactical-pressure');
+const immediateCapturesBoardEl = document.getElementById('immediate-captures-board');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const positionPlanEl = document.getElementById('position-plan');
 const kingSafetyBoardEl = document.getElementById('king-safety-board');
@@ -537,6 +538,32 @@ function renderPositionSummary() {
         <p>Plan cue: ${plan}</p>
         <p>Watch-out: ${caution}</p>
       `;
+    }
+
+    if (immediateCapturesBoardEl) {
+      const captureMoves = legalMoves
+        .filter((move) => move.flags.includes('c') || move.flags.includes('e'))
+        .map((move) => {
+          const target = move.flags.includes('e') ? { type: 'p', color: game.turn() === 'w' ? 'b' : 'w' } : game.get(move.to);
+          return {
+            san: move.san || `${move.from}-${move.to}`,
+            square: move.to,
+            value: pieceValues[target?.type] || 100,
+            piece: target?.type || '?',
+          };
+        })
+        .sort((a, b) => b.value - a.value);
+
+      if (!captureMoves.length) {
+        immediateCapturesBoardEl.innerHTML = '<p>Immediate captures: no direct capture is available for the side to move, so the position is more about setup than tactics.</p>';
+      } else {
+        const best = captureMoves[0];
+        immediateCapturesBoardEl.innerHTML = `
+          <p>Immediate captures: ${captureMoves.slice(0, 3).map((move) => `${move.san} on ${move.square}`).join(' | ')}</p>
+          <p>Highest-value target: ${best.piece.toUpperCase()} on ${best.square} (${best.value / 100} point piece).</p>
+          <p>${captureMoves.length >= 3 ? 'Multiple forcing captures exist, so calculate before committing to a quiet move.' : 'The tactical tree is narrow enough to compare the best capture against one improving move.'}</p>
+        `;
+      }
     }
   }
 
