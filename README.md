@@ -7,6 +7,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Click-to-move board with legal-target highlighting.
 - Move history in SAN notation.
 - FEN / PGN export and copy.
+- Copy Position Brief exports the current board read, evaluation summary, and engine line as one walkthrough artifact.
 - Shareable URL state for custom positions and board orientation.
 - Load custom positions from FEN.
 - Board orientation flip.
@@ -59,5 +60,4 @@ Open `http://localhost:8000`.
 ## Future Improvements
 
 - Add iterative deepening and move ordering heuristics.
-- Add evaluation breakdown panel (material vs positional score).
 - Add opening database lookup and ECO tagging.

@@ -21,6 +21,7 @@ const resetBtn = document.getElementById('reset');
 const flipBtn = document.getElementById('flip');
 const copyFenBtn = document.getElementById('copy-fen');
 const copyShareLinkBtn = document.getElementById('copy-share-link');
+const copyPositionBriefBtn = document.getElementById('copy-position-brief');
 const copyPgnBtn = document.getElementById('copy-pgn');
 const loadFenBtn = document.getElementById('load-fen');
 
@@ -910,6 +911,22 @@ async function copyText(text, label) {
   }
 }
 
+function buildPositionBrief() {
+  return [
+    'Abhi Chess Engine Position Brief',
+    '',
+    `FEN: ${game.fen()}`,
+    `PGN: ${game.pgn({ max_width: 72, newline_char: ' ' }) || 'Opening position'}`,
+    `Position summary: ${(positionSummaryEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Tactical pressure: ${(tacticalPressureEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Evaluation breakdown: ${(evaluationBreakdownEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Position plan: ${(positionPlanEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Move verdict: ${(moveVerdictEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Engine candidates: ${(engineCandidatesEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Engine line preview: ${(engineLinePreviewEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+  ].join('\n');
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
@@ -969,6 +986,7 @@ copyShareLinkBtn.addEventListener('click', () => {
   syncUrlState();
   copyText(window.location.href, 'share link');
 });
+copyPositionBriefBtn.addEventListener('click', () => copyText(buildPositionBrief(), 'position brief'));
 copyPgnBtn.addEventListener('click', () => copyText(game.pgn({ max_width: 72, newline_char: '\n' }), 'PGN'));
 
 loadFenBtn.addEventListener('click', () => {
