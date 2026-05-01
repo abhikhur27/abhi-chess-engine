@@ -10,6 +10,7 @@ const immediateCapturesBoardEl = document.getElementById('immediate-captures-boa
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const positionPlanEl = document.getElementById('position-plan');
 const kingSafetyBoardEl = document.getElementById('king-safety-board');
+const threatBoardEl = document.getElementById('threat-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
@@ -443,6 +444,30 @@ function normalizeSan(move) {
   return move.replace(/[+#?!]+/g, '');
 }
 
+function fenWithTurn(fen, turn) {
+  const parts = fen.split(' ');
+  if (parts.length < 2) return fen;
+  parts[1] = turn;
+  return parts.join(' ');
+}
+
+function collectAttackedSquares(color) {
+  const clone = createGame(fenWithTurn(game.fen(), color));
+  const attacked = new Set();
+  let checks = 0;
+  const moves = clone.moves({ verbose: true });
+
+  moves.forEach((move) => {
+    attacked.add(move.to);
+    clone.move(move);
+    const san = clone.history().slice(-1)[0] || '';
+    if (san.includes('+') || san.includes('#')) checks += 1;
+    clone.undo();
+  });
+
+  return { attacked, checks, moves };
+}
+
 function identifyOpening() {
   const history = game.history().map(normalizeSan);
   if (!history.length) {
@@ -636,6 +661,42 @@ function renderPositionSummary() {
           : whitePressure - whiteShield > blackPressure - blackShield
             ? 'White is carrying the shakier shelter, so forcing trades or checks against the white king deserves attention.'
             : 'Black is carrying the shakier shelter, so the initiative should aim at black king exposure first.'
+      }</p>
+    `;
+  }
+
+  if (threatBoardEl) {
+    const whiteThreats = collectAttackedSquares('w');
+    const blackThreats = collectAttackedSquares('b');
+    const contestedSquares = [...whiteThreats.attacked].filter((square) => blackThreats.attacked.has(square));
+    const boardPieces = [];
+    board.forEach((row, rowIndex) => {
+      row.forEach((piece, colIndex) => {
+        if (!piece) return;
+        const square = `${files[colIndex]}${8 - rowIndex}`;
+        boardPieces.push({ piece, square });
+      });
+    });
+
+    const hangingWhite = boardPieces.filter(
+      ({ piece, square }) => piece.color === 'w' && blackThreats.attacked.has(square) && !whiteThreats.attacked.has(square)
+    );
+    const hangingBlack = boardPieces.filter(
+      ({ piece, square }) => piece.color === 'b' && whiteThreats.attacked.has(square) && !blackThreats.attacked.has(square)
+    );
+    const hotLane = contestedSquares.length
+      ? contestedSquares
+          .slice(0, 4)
+          .join(', ')
+      : 'none';
+
+    threatBoardEl.innerHTML = `
+      <p>White attacks ${whiteThreats.attacked.size} square${whiteThreats.attacked.size === 1 ? '' : 's'} | Black attacks ${blackThreats.attacked.size} square${blackThreats.attacked.size === 1 ? '' : 's'}.</p>
+      <p>Contested squares: ${contestedSquares.length} (${hotLane}). Checking resources: White ${whiteThreats.checks}, Black ${blackThreats.checks}.</p>
+      <p>${
+        !hangingWhite.length && !hangingBlack.length
+          ? 'No obviously hanging pieces right now, so the next tactical swing is more about creating pressure than collecting a loose target.'
+          : `Loose material: White ${hangingWhite.map(({ piece, square }) => `${piece.type.toUpperCase()}@${square}`).slice(0, 2).join(', ') || 'none'} | Black ${hangingBlack.map(({ piece, square }) => `${piece.type.toUpperCase()}@${square}`).slice(0, 2).join(', ') || 'none'}.`
       }</p>
     `;
   }
@@ -921,6 +982,7 @@ function buildPositionBrief() {
     `Tactical pressure: ${(tacticalPressureEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Evaluation breakdown: ${(evaluationBreakdownEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Position plan: ${(positionPlanEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Threat board: ${(threatBoardEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Move verdict: ${(moveVerdictEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Engine candidates: ${(engineCandidatesEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Engine line preview: ${(engineLinePreviewEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
