@@ -10,6 +10,7 @@ const immediateCapturesBoardEl = document.getElementById('immediate-captures-boa
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
 const positionPlanEl = document.getElementById('position-plan');
 const kingSafetyBoardEl = document.getElementById('king-safety-board');
+const endgamePostureBoardEl = document.getElementById('endgame-posture-board');
 const threatBoardEl = document.getElementById('threat-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
@@ -662,6 +663,43 @@ function renderPositionSummary() {
             ? 'White is carrying the shakier shelter, so forcing trades or checks against the white king deserves attention.'
             : 'Black is carrying the shakier shelter, so the initiative should aim at black king exposure first.'
       }</p>
+    `;
+  }
+
+  if (endgamePostureBoardEl) {
+    const pawns = { w: 0, b: 0 };
+    const minors = { w: 0, b: 0 };
+    const rooks = { w: 0, b: 0 };
+    const queens = { w: 0, b: 0 };
+
+    board.forEach((row) => {
+      row.forEach((piece) => {
+        if (!piece) return;
+        if (piece.type === 'p') pawns[piece.color] += 1;
+        if (piece.type === 'n' || piece.type === 'b') minors[piece.color] += 1;
+        if (piece.type === 'r') rooks[piece.color] += 1;
+        if (piece.type === 'q') queens[piece.color] += 1;
+      });
+    });
+
+    const totalHeavy = rooks.w + rooks.b + queens.w + queens.b;
+    const totalMinors = minors.w + minors.b;
+    const likelyEndgame = totalHeavy <= 2 && totalMinors <= 4;
+    const pawnEdge = pawns.w - pawns.b;
+    const guidance =
+      likelyEndgame
+        ? evaluation.total === 0
+          ? 'Material is lean enough that king activity and passed-pawn races should dominate the next plan.'
+          : evaluation.total > 0
+            ? 'White should simplify only when the resulting king race still preserves the evaluation edge.'
+            : 'Black should simplify only when the resulting king race still preserves the evaluation edge.'
+        : 'The board still has enough heavy material that this is not a pure ending yet; treat king walks carefully.';
+
+    endgamePostureBoardEl.innerHTML = `
+      <p>Heavy pieces: White Q${queens.w}/R${rooks.w} | Black Q${queens.b}/R${rooks.b}.</p>
+      <p>Minors + pawns: White ${minors.w} minor / ${pawns.w} pawn${pawns.w === 1 ? '' : 's'} | Black ${minors.b} minor / ${pawns.b} pawn${pawns.b === 1 ? '' : 's'}.</p>
+      <p>Endgame posture: ${likelyEndgame ? 'lean enough to think in king-activity and pawn-race terms' : 'still transition-heavy, so liquidation choices matter more than raw king sprinting'}.</p>
+      <p>${pawnEdge === 0 ? guidance : `${guidance} Pawn count edge: ${pawnEdge > 0 ? `White +${pawnEdge}` : `Black +${Math.abs(pawnEdge)}`}.`}</p>
     `;
   }
 
