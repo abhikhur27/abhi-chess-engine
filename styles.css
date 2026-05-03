@@ -244,6 +244,35 @@ select {
   font-size: 0.86rem;
 }
 
+.move-row {
+  list-style: decimal;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.move-number {
+  color: var(--muted);
+  min-width: 2rem;
+}
+
+.move-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.move-chip.is-latest {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.16);
+  color: #f8fafc;
+}
+
 .position-summary {
   margin-top: 0.4rem;
   border: 1px solid var(--border);

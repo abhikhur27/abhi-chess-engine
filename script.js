@@ -274,7 +274,12 @@ function renderMoveList() {
     const whiteMove = history[i] || '';
     const blackMove = history[i + 1] || '';
     const item = document.createElement('li');
-    item.textContent = `${whiteMove} ${blackMove}`.trim();
+    item.className = 'move-row';
+    item.innerHTML = `
+      <span class="move-number">${Math.floor(i / 2) + 1}.</span>
+      <span class="move-chip${i === history.length - 1 ? ' is-latest' : ''}">W ${whiteMove || '--'}</span>
+      <span class="move-chip${i + 1 === history.length - 1 ? ' is-latest' : ''}">B ${blackMove || '--'}</span>
+    `;
     moveListEl.appendChild(item);
   }
 }
