@@ -12,6 +12,7 @@ const positionPlanEl = document.getElementById('position-plan');
 const kingSafetyBoardEl = document.getElementById('king-safety-board');
 const endgamePostureBoardEl = document.getElementById('endgame-posture-board');
 const threatBoardEl = document.getElementById('threat-board');
+const activityBoardEl = document.getElementById('activity-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
@@ -741,6 +742,34 @@ function renderPositionSummary() {
           ? 'No obviously hanging pieces right now, so the next tactical swing is more about creating pressure than collecting a loose target.'
           : `Loose material: White ${hangingWhite.map(({ piece, square }) => `${piece.type.toUpperCase()}@${square}`).slice(0, 2).join(', ') || 'none'} | Black ${hangingBlack.map(({ piece, square }) => `${piece.type.toUpperCase()}@${square}`).slice(0, 2).join(', ') || 'none'}.`
       }</p>
+    `;
+  }
+
+  if (activityBoardEl) {
+    const moveDetails = getVerboseMoves();
+    const activity = {
+      w: { total: 0, n: 0, b: 0, r: 0, q: 0, p: 0, k: 0 },
+      b: { total: 0, n: 0, b: 0, r: 0, q: 0, p: 0, k: 0 },
+    };
+
+    moveDetails.forEach((move) => {
+      const piece = game.get(move.from);
+      if (!piece) return;
+      activity[piece.color].total += 1;
+      activity[piece.color][piece.type] += 1;
+    });
+
+    const activeColor = game.turn();
+    const waitingColor = activeColor === 'w' ? 'b' : 'w';
+    const activeLabel = activeColor === 'w' ? 'White' : 'Black';
+    const topPiece = Object.entries(activity[activeColor])
+      .filter(([key]) => key !== 'total')
+      .sort((a, b) => b[1] - a[1])[0];
+
+    activityBoardEl.innerHTML = `
+      <p>${activeLabel} to move with ${activity[activeColor].total} legal move${activity[activeColor].total === 1 ? '' : 's'} available right now.</p>
+      <p>Most mobile piece family: ${topPiece ? `${topPiece[0].toUpperCase()} pieces with ${topPiece[1]} candidate move${topPiece[1] === 1 ? '' : 's'}` : 'none'}.</p>
+      <p>${activity[activeColor].total >= activity[waitingColor].total ? `${activeLabel} has at least as much immediate activity as the opponent, so preserving initiative may matter more than rushing simplification.` : `${activeLabel} is relatively cramped, so improving piece placement may matter more than forcing tactics right away.`}</p>
     `;
   }
 

@@ -22,6 +22,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Immediate captures board lists the direct tactical shots available to the side to move and highlights the highest-value target.
 - King safety board estimates pawn shield quality and nearby enemy pressure around both kings.
 - Endgame posture board reads whether the position is actually transitioning into a king-activity or pawn-race ending.
+- Activity board summarizes which side and piece family currently own the most immediate mobility.
 - Opening guide identifies common lines from the current SAN move order.
 - Engine line preview extends the top continuation into a short best-line sequence for portfolio walkthroughs.
 
