@@ -13,6 +13,7 @@ const kingSafetyBoardEl = document.getElementById('king-safety-board');
 const endgamePostureBoardEl = document.getElementById('endgame-posture-board');
 const threatBoardEl = document.getElementById('threat-board');
 const activityBoardEl = document.getElementById('activity-board');
+const tradePressureBoardEl = document.getElementById('trade-pressure-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
@@ -770,6 +771,39 @@ function renderPositionSummary() {
       <p>${activeLabel} to move with ${activity[activeColor].total} legal move${activity[activeColor].total === 1 ? '' : 's'} available right now.</p>
       <p>Most mobile piece family: ${topPiece ? `${topPiece[0].toUpperCase()} pieces with ${topPiece[1]} candidate move${topPiece[1] === 1 ? '' : 's'}` : 'none'}.</p>
       <p>${activity[activeColor].total >= activity[waitingColor].total ? `${activeLabel} has at least as much immediate activity as the opponent, so preserving initiative may matter more than rushing simplification.` : `${activeLabel} is relatively cramped, so improving piece placement may matter more than forcing tactics right away.`}</p>
+    `;
+  }
+
+  if (tradePressureBoardEl) {
+    const tradeCounts = { w: { heavy: 0, minors: 0, pawns: 0 }, b: { heavy: 0, minors: 0, pawns: 0 } };
+    board.forEach((row) => {
+      row.forEach((piece) => {
+        if (!piece) return;
+        if (piece.type === 'q' || piece.type === 'r') tradeCounts[piece.color].heavy += 1;
+        if (piece.type === 'n' || piece.type === 'b') tradeCounts[piece.color].minors += 1;
+        if (piece.type === 'p') tradeCounts[piece.color].pawns += 1;
+      });
+    });
+
+    const edgeColor = evaluation.total === 0 ? null : evaluation.total > 0 ? 'w' : 'b';
+    const edgeLabel = edgeColor === 'w' ? 'White' : edgeColor === 'b' ? 'Black' : 'Neither side';
+    const heavyStillOn = tradeCounts.w.heavy + tradeCounts.b.heavy;
+    const simplifyCue =
+      !edgeColor
+        ? 'The position is close enough to equal that trades should be judged by activity and king safety, not autopilot simplification.'
+        : heavyStillOn <= 2
+          ? `${edgeLabel} can usually welcome clean trades if the king becomes more active than the opponent's.`
+          : `${edgeLabel} should only simplify when the resulting position keeps the more active pieces and the safer king.`;
+    const tensionCue =
+      tradeCounts.w.minors + tradeCounts.b.minors >= 5
+        ? 'Minor-piece tension is still high, so trading the wrong bishop or knight could change which squares matter most.'
+        : 'The piece count is already thinning, so each exchange pushes the game closer to a concrete race.';
+
+    tradePressureBoardEl.innerHTML = `
+      <p>Heavy pieces: White ${tradeCounts.w.heavy} | Black ${tradeCounts.b.heavy}. Minor pieces: White ${tradeCounts.w.minors} | Black ${tradeCounts.b.minors}.</p>
+      <p>Trade edge: ${edgeLabel} ${edgeColor ? `holds the static edge at ${formatEvalLabel(evaluation.total)}` : 'does not yet own a clear static edge'}.</p>
+      <p>${simplifyCue}</p>
+      <p>${tensionCue}</p>
     `;
   }
 
