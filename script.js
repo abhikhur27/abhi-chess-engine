@@ -13,6 +13,7 @@ const kingSafetyBoardEl = document.getElementById('king-safety-board');
 const endgamePostureBoardEl = document.getElementById('endgame-posture-board');
 const threatBoardEl = document.getElementById('threat-board');
 const activityBoardEl = document.getElementById('activity-board');
+const initiativeBoardEl = document.getElementById('initiative-board');
 const tradePressureBoardEl = document.getElementById('trade-pressure-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const moveVerdictEl = document.getElementById('move-verdict');
@@ -771,6 +772,37 @@ function renderPositionSummary() {
       <p>${activeLabel} to move with ${activity[activeColor].total} legal move${activity[activeColor].total === 1 ? '' : 's'} available right now.</p>
       <p>Most mobile piece family: ${topPiece ? `${topPiece[0].toUpperCase()} pieces with ${topPiece[1]} candidate move${topPiece[1] === 1 ? '' : 's'}` : 'none'}.</p>
       <p>${activity[activeColor].total >= activity[waitingColor].total ? `${activeLabel} has at least as much immediate activity as the opponent, so preserving initiative may matter more than rushing simplification.` : `${activeLabel} is relatively cramped, so improving piece placement may matter more than forcing tactics right away.`}</p>
+    `;
+  }
+
+  if (initiativeBoardEl) {
+    const moveDetails = getVerboseMoves();
+    const activeColor = game.turn();
+    const activeLabel = activeColor === 'w' ? 'White' : 'Black';
+    const edgeLabel =
+      evaluation.total === 0
+        ? 'Neither side owns a static edge yet.'
+        : evaluation.total > 0
+          ? 'White owns the static edge.'
+          : 'Black owns the static edge.';
+    const forcingMoves = moveDetails.filter((move) => move.flags.includes('c') || move.flags.includes('e')).length;
+    const mobilityLead =
+      forcingMoves >= 4
+        ? `${activeLabel} has enough forcing options to keep asking questions immediately.`
+        : `${activeLabel} has fewer forcing options, so initiative is more about improving the next piece than cashing in tactics.`;
+    const initiativeCue =
+      (evaluation.total > 0 && activeColor === 'w') || (evaluation.total < 0 && activeColor === 'b')
+        ? `${activeLabel} has both the move and the edge, so avoid relief trades that hand the tempo back.`
+        : evaluation.total === 0
+          ? `${activeLabel} has the move in an equal position, so the cleanest initiative gain is usually coordination, not material greed.`
+          : `${activeLabel} has the move but not the evaluation edge, so use tempo to reduce the opponent's best plan first.`;
+
+    initiativeBoardEl.innerHTML = `
+      <p><strong>Initiative owner:</strong> ${activeLabel} to move.</p>
+      <p><strong>Static edge:</strong> ${edgeLabel}</p>
+      <p><strong>Forcing bandwidth:</strong> ${forcingMoves} immediate forcing move${forcingMoves === 1 ? '' : 's'}.</p>
+      <p>${mobilityLead}</p>
+      <p>${initiativeCue}</p>
     `;
   }
 
