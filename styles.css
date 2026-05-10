@@ -54,6 +54,22 @@ h1 {
   margin: 0.45rem 0 0;
 }
 
+.demo-strip {
+  margin-top: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.6rem 0.9rem;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+
+.demo-strip strong {
+  color: var(--accent);
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(360px, 1fr) 320px;

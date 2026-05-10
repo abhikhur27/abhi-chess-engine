@@ -53,6 +53,13 @@ python -m http.server 8000
 
 Open `http://localhost:8000`.
 
+## Portfolio Demo Path
+
+1. Play a short opening or load a custom FEN.
+2. Read the tactical pressure, king safety, and opening guide boards together.
+3. Trigger the engine and inspect the candidate moves plus line preview.
+4. Copy the position brief for a portable walkthrough artifact.
+
 ## GitHub Pages Compatibility
 
 - Fully static frontend.
