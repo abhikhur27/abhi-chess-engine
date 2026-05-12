@@ -16,6 +16,7 @@ const activityBoardEl = document.getElementById('activity-board');
 const initiativeBoardEl = document.getElementById('initiative-board');
 const tradePressureBoardEl = document.getElementById('trade-pressure-board');
 const openingSummaryEl = document.getElementById('opening-summary');
+const developmentBoardEl = document.getElementById('development-board');
 const moveVerdictEl = document.getElementById('move-verdict');
 const engineCandidatesEl = document.getElementById('engine-candidates');
 const engineLinePreviewEl = document.getElementById('engine-line-preview');
@@ -847,6 +848,39 @@ function renderPositionSummary() {
       <p>Family: ${opening.family}</p>
       <p>${opening.cue}</p>
       <p>Book match depth: ${opening.matchedPly} ply | Moves played: ${historyCount}</p>
+    `;
+  }
+
+  if (developmentBoardEl) {
+    const startSquares = {
+      w: ['b1', 'g1', 'c1', 'f1'],
+      b: ['b8', 'g8', 'c8', 'f8'],
+    };
+    const developed = { w: 0, b: 0 };
+    startSquares.w.forEach((square) => {
+      const piece = game.get(square);
+      if (!(piece && piece.color === 'w' && (piece.type === 'n' || piece.type === 'b'))) developed.w += 1;
+    });
+    startSquares.b.forEach((square) => {
+      const piece = game.get(square);
+      if (!(piece && piece.color === 'b' && (piece.type === 'n' || piece.type === 'b'))) developed.b += 1;
+    });
+
+    const whiteKing = game.get('g1')?.type === 'k' || game.get('c1')?.type === 'k';
+    const blackKing = game.get('g8')?.type === 'k' || game.get('c8')?.type === 'k';
+    const whiteCenterPawnsMoved = !game.get('d2') || !game.get('e2');
+    const blackCenterPawnsMoved = !game.get('d7') || !game.get('e7');
+    const lead =
+      developed.w === developed.b
+        ? 'Development is level.'
+        : developed.w > developed.b
+          ? 'White is ahead in development.'
+          : 'Black is ahead in development.';
+
+    developmentBoardEl.innerHTML = `
+      <p>White: ${developed.w}/4 minor pieces developed | ${whiteKing ? 'castled or king relocated' : 'king still uncastled'} | center pawns ${whiteCenterPawnsMoved ? 'have moved' : 'still fixed'}.</p>
+      <p>Black: ${developed.b}/4 minor pieces developed | ${blackKing ? 'castled or king relocated' : 'king still uncastled'} | center pawns ${blackCenterPawnsMoved ? 'have moved' : 'still fixed'}.</p>
+      <p>${lead} ${!whiteKing || !blackKing ? 'King safety should still outrank pawn grabbing.' : 'With both kings safer, development edge can now convert into activity and initiative.'}</p>
     `;
   }
 
