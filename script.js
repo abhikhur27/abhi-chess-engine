@@ -23,6 +23,7 @@ const engineLinePreviewEl = document.getElementById('engine-line-preview');
 const messageEl = document.getElementById('message');
 
 const undoBtn = document.getElementById('undo');
+const redoBtn = document.getElementById('redo');
 const resetBtn = document.getElementById('reset');
 const flipBtn = document.getElementById('flip');
 const copyFenBtn = document.getElementById('copy-fen');
@@ -104,6 +105,7 @@ let lastMove = null;
 let lastMoveVerdict = null;
 let engineThinking = false;
 let pendingEngineTimeout = null;
+let redoStack = [];
 const START_FEN = createGame().fen();
 
 const pst = {
@@ -309,6 +311,7 @@ function updateStatus() {
   syncUrlState();
 
   undoBtn.disabled = game.history().length === 0;
+  if (redoBtn) redoBtn.disabled = redoStack.length === 0;
 }
 
 function renderAll() {
@@ -1087,6 +1090,7 @@ function scheduleEngineMove() {
     lastMoveVerdict = previewMoveVerdict({ from: result.move.from, to: result.move.to, promotion: 'q' });
     const played = game.move({ from: result.move.from, to: result.move.to, promotion: 'q' });
     if (played) {
+      clearRedoStack();
       lastMove = played;
       clearSelection();
       renderAll();
@@ -1107,6 +1111,7 @@ function handleSquareClick(square) {
     const verdict = previewMoveVerdict({ from: selectedSquare, to: square, promotion: 'q' });
     const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
     if (move) {
+      clearRedoStack();
       lastMove = move;
       lastMoveVerdict = verdict;
       clearSelection();
@@ -1166,6 +1171,10 @@ function isEditableTarget(target) {
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 }
 
+function clearRedoStack() {
+  redoStack = [];
+}
+
 undoBtn.addEventListener('click', () => {
   if (pendingEngineTimeout) {
     clearTimeout(pendingEngineTimeout);
@@ -1178,12 +1187,41 @@ undoBtn.addEventListener('click', () => {
     return;
   }
 
+  redoStack.push({ from: move.from, to: move.to, promotion: move.promotion || 'q' });
   clearSelection();
   const history = game.history({ verbose: true });
   lastMove = history.length ? history[history.length - 1] : null;
   lastMoveVerdict = null;
   setMessage(`Undid move: ${move.san}`);
   setEngineStatus('Engine state updated after undo.');
+  renderAll();
+});
+
+redoBtn?.addEventListener('click', () => {
+  if (pendingEngineTimeout) {
+    clearTimeout(pendingEngineTimeout);
+    pendingEngineTimeout = null;
+  }
+
+  const nextMove = redoStack.pop();
+  if (!nextMove) {
+    setMessage('No moves to redo.');
+    return;
+  }
+
+  const move = game.move(nextMove);
+  if (!move) {
+    setMessage('Could not redo that move from the current position.');
+    clearRedoStack();
+    renderAll();
+    return;
+  }
+
+  clearSelection();
+  lastMove = move;
+  lastMoveVerdict = null;
+  setMessage(`Redid move: ${move.san}`);
+  setEngineStatus('Engine state updated after redo.');
   renderAll();
 });
 
@@ -1194,6 +1232,7 @@ resetBtn.addEventListener('click', () => {
   }
 
   game.reset();
+  clearRedoStack();
   clearSelection();
   lastMove = null;
   lastMoveVerdict = null;
@@ -1238,6 +1277,7 @@ loadFenBtn.addEventListener('click', () => {
     }
 
     clearSelection();
+    clearRedoStack();
     const history = game.history({ verbose: true });
     lastMove = history.length ? history[history.length - 1] : null;
     lastMoveVerdict = null;
@@ -1283,6 +1323,9 @@ document.addEventListener('keydown', (event) => {
   if (key === 'u') {
     event.preventDefault();
     undoBtn.click();
+  } else if (key === 'y') {
+    event.preventDefault();
+    redoBtn?.click();
   } else if (key === 'r') {
     event.preventDefault();
     resetBtn.click();
