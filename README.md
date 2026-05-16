@@ -23,6 +23,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - King safety board estimates pawn shield quality and nearby enemy pressure around both kings.
 - Endgame posture board reads whether the position is actually transitioning into a king-activity or pawn-race ending.
 - Activity board summarizes which side and piece family currently own the most immediate mobility.
+- Center control board tracks who is attacking or occupying the four core center squares before you drift into wing plans.
 - Opening guide identifies common lines from the current SAN move order.
 - Development board tracks minor-piece rollout, king safety posture, and central-pawn activation before the position leaves the opening.
 - Engine line preview extends the top continuation into a short best-line sequence for portfolio walkthroughs.

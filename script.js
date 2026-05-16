@@ -14,6 +14,7 @@ const endgamePostureBoardEl = document.getElementById('endgame-posture-board');
 const threatBoardEl = document.getElementById('threat-board');
 const activityBoardEl = document.getElementById('activity-board');
 const initiativeBoardEl = document.getElementById('initiative-board');
+const centerControlBoardEl = document.getElementById('center-control-board');
 const tradePressureBoardEl = document.getElementById('trade-pressure-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const developmentBoardEl = document.getElementById('development-board');
@@ -807,6 +808,32 @@ function renderPositionSummary() {
       <p><strong>Forcing bandwidth:</strong> ${forcingMoves} immediate forcing move${forcingMoves === 1 ? '' : 's'}.</p>
       <p>${mobilityLead}</p>
       <p>${initiativeCue}</p>
+    `;
+  }
+
+  if (centerControlBoardEl) {
+    const whiteThreats = collectAttackedSquares('w');
+    const blackThreats = collectAttackedSquares('b');
+    const centerSquares = ['d4', 'e4', 'd5', 'e5'];
+    const whiteAttacks = centerSquares.filter((square) => whiteThreats.attacked.has(square)).length;
+    const blackAttacks = centerSquares.filter((square) => blackThreats.attacked.has(square)).length;
+    const occupants = centerSquares
+      .map((square) => {
+        const piece = game.get(square);
+        return piece ? `${piece.color === 'w' ? 'White' : 'Black'} ${piece.type.toUpperCase()} on ${square}` : null;
+      })
+      .filter(Boolean);
+    const controlCue =
+      whiteAttacks === blackAttacks
+        ? 'Center control is roughly balanced, so the next gain probably comes from improving one piece rather than forcing a central break immediately.'
+        : whiteAttacks > blackAttacks
+          ? 'White is asking more central questions right now, so black should respect central tension before drifting to the wing.'
+          : 'Black is contesting more central squares right now, so white should not treat the center as stable by default.';
+
+    centerControlBoardEl.innerHTML = `
+      <p><strong>Attacks on d4/e4/d5/e5:</strong> White ${whiteAttacks} | Black ${blackAttacks}.</p>
+      <p><strong>Central occupants:</strong> ${occupants.length ? occupants.join(' | ') : 'No piece is currently sitting on the four core center squares.'}</p>
+      <p>${controlCue}</p>
     `;
   }
 
