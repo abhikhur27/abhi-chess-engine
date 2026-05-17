@@ -15,6 +15,7 @@ const threatBoardEl = document.getElementById('threat-board');
 const activityBoardEl = document.getElementById('activity-board');
 const initiativeBoardEl = document.getElementById('initiative-board');
 const centerControlBoardEl = document.getElementById('center-control-board');
+const spacePressureBoardEl = document.getElementById('space-pressure-board');
 const tradePressureBoardEl = document.getElementById('trade-pressure-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const developmentBoardEl = document.getElementById('development-board');
@@ -834,6 +835,29 @@ function renderPositionSummary() {
       <p><strong>Attacks on d4/e4/d5/e5:</strong> White ${whiteAttacks} | Black ${blackAttacks}.</p>
       <p><strong>Central occupants:</strong> ${occupants.length ? occupants.join(' | ') : 'No piece is currently sitting on the four core center squares.'}</p>
       <p>${controlCue}</p>
+    `;
+  }
+
+  if (spacePressureBoardEl) {
+    const whiteThreats = collectAttackedSquares('w');
+    const blackThreats = collectAttackedSquares('b');
+    const whiteFrontier = ['c5', 'd5', 'e5', 'f5', 'c6', 'd6', 'e6', 'f6'];
+    const blackFrontier = ['c4', 'd4', 'e4', 'f4', 'c3', 'd3', 'e3', 'f3'];
+    const whiteSpace = whiteFrontier.filter((square) => whiteThreats.attacked.has(square)).length;
+    const blackSpace = blackFrontier.filter((square) => blackThreats.attacked.has(square)).length;
+    const whiteOutposts = whiteFrontier.filter((square) => game.get(square)?.color === 'w');
+    const blackOutposts = blackFrontier.filter((square) => game.get(square)?.color === 'b');
+    const spaceCue =
+      whiteSpace === blackSpace
+        ? 'Space is roughly level, so the next gain should come from piece quality or a concrete tactical break rather than drifting pawns.'
+        : whiteSpace > blackSpace
+          ? 'White is claiming more forward squares, so black should challenge the center before the position turns into a slow squeeze.'
+          : 'Black is claiming more forward squares, so white should look for central friction or piece activity before getting cramped.';
+
+    spacePressureBoardEl.innerHTML = `
+      <p><strong>Forward-square pressure:</strong> White ${whiteSpace}/8 | Black ${blackSpace}/8.</p>
+      <p><strong>Advanced footholds:</strong> White ${whiteOutposts.length ? whiteOutposts.join(', ') : 'none'} | Black ${blackOutposts.length ? blackOutposts.join(', ') : 'none'}.</p>
+      <p>${spaceCue}</p>
     `;
   }
 
