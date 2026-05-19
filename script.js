@@ -17,6 +17,7 @@ const initiativeBoardEl = document.getElementById('initiative-board');
 const centerControlBoardEl = document.getElementById('center-control-board');
 const spacePressureBoardEl = document.getElementById('space-pressure-board');
 const tradePressureBoardEl = document.getElementById('trade-pressure-board');
+const imbalanceBoardEl = document.getElementById('imbalance-board');
 const openingSummaryEl = document.getElementById('opening-summary');
 const developmentBoardEl = document.getElementById('development-board');
 const moveVerdictEl = document.getElementById('move-verdict');
@@ -617,6 +618,26 @@ function renderPositionSummary() {
       <p>Material term: ${materialEdge === 0 ? 'Equal' : materialEdge > 0 ? `White +${(materialEdge / 100).toFixed(1)}` : `Black +${(Math.abs(materialEdge) / 100).toFixed(1)}`}</p>
       <p>Positional term: ${positionalEdge === 0 ? 'Equal' : positionalEdge > 0 ? `White +${(positionalEdge / 100).toFixed(1)}` : `Black +${(Math.abs(positionalEdge) / 100).toFixed(1)}`}</p>
       <p>Side to move: ${tempoSide}</p>
+    `;
+  }
+
+  if (imbalanceBoardEl) {
+    const whiteMinorPieces = counts.wb + counts.wn;
+    const blackMinorPieces = counts.bb + counts.bn;
+    const whiteRooks = counts.wr;
+    const blackRooks = counts.br;
+    const queenGap = counts.wq - counts.bq;
+    const materialLeader = evaluation.total === 0 ? 'Neither side' : evaluation.total > 0 ? 'White' : 'Black';
+    const planCue = Math.abs(materialEdge) >= 200
+      ? `${materialLeader} can consider simplification because the material edge is already tangible.`
+      : Math.abs(positionalEdge) >= 80
+        ? 'The edge is more positional than material, so preserve active pieces before forcing trades.'
+        : 'The imbalance is still modest, so improving piece placement matters more than forcing structure changes.';
+
+    imbalanceBoardEl.innerHTML = `
+      <p>Minor pieces: White ${whiteMinorPieces} vs Black ${blackMinorPieces} | Rooks: White ${whiteRooks} vs Black ${blackRooks}</p>
+      <p>Queen balance: ${queenGap === 0 ? 'Both queens still present equally.' : queenGap > 0 ? 'White has the queen edge.' : 'Black has the queen edge.'}</p>
+      <p>Imbalance cue: ${planCue}</p>
     `;
   }
 
