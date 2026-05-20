@@ -4,6 +4,7 @@ const moveListEl = document.getElementById('move-list');
 const fenEl = document.getElementById('fen');
 const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
+const presetPositionSelect = document.getElementById('preset-position');
 const positionSummaryEl = document.getElementById('position-summary');
 const tacticalPressureEl = document.getElementById('tactical-pressure');
 const immediateCapturesBoardEl = document.getElementById('immediate-captures-board');
@@ -34,6 +35,7 @@ const copyShareLinkBtn = document.getElementById('copy-share-link');
 const copyPositionBriefBtn = document.getElementById('copy-position-brief');
 const copyPgnBtn = document.getElementById('copy-pgn');
 const loadFenBtn = document.getElementById('load-fen');
+const loadPresetBtn = document.getElementById('load-preset');
 
 const engineSideSelect = document.getElementById('engine-side');
 const engineDepthInput = document.getElementById('engine-depth');
@@ -99,6 +101,21 @@ const openingBook = [
     san: ['c4'],
   },
 ];
+
+const positionPresets = {
+  italian: {
+    fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+    note: 'Loaded Italian center tension preset. Check development, center control, and engine candidates together.',
+  },
+  'mate-net': {
+    fen: 'r1bq1rk1/pppp1ppp/2n2n2/4p3/2B1P1Q1/5N2/PPPP1PPP/RNB2RK1 b - - 0 6',
+    note: 'Loaded kingside mate-net preset. Inspect threat pressure, king safety, and forcing engine lines.',
+  },
+  'rook-endgame': {
+    fen: '8/5pk1/3r2p1/3P4/4R3/6P1/5P1P/6K1 w - - 0 1',
+    note: 'Loaded rook endgame preset. Read space, king activity, and endgame posture before moving.',
+  },
+};
 
 let game = createGame();
 let orientation = 'white';
@@ -335,6 +352,35 @@ function getLegalTargets(square) {
 function clearSelection() {
   selectedSquare = null;
   legalTargets = [];
+}
+
+function loadFenPosition(fen, successMessage) {
+  try {
+    const loaded = game.load(fen);
+    if (!loaded) {
+      setMessage('Invalid FEN. Could not load position.');
+      return false;
+    }
+
+    clearSelection();
+    clearRedoStack();
+    const history = game.history({ verbose: true });
+    lastMove = history.length ? history[history.length - 1] : null;
+    lastMoveVerdict = null;
+    fenInput.value = fen;
+    setMessage(successMessage);
+    setEngineStatus('Position loaded. Engine ready.');
+    renderAll();
+
+    if (shouldEngineMoveNow()) {
+      scheduleEngineMove();
+    }
+
+    return true;
+  } catch (error) {
+    setMessage('Invalid FEN. Could not load position.');
+    return false;
+  }
 }
 
 function syncUrlState() {
@@ -1341,28 +1387,17 @@ loadFenBtn.addEventListener('click', () => {
     return;
   }
 
-  try {
-    const loaded = game.load(fen);
-    if (!loaded) {
-      setMessage('Invalid FEN. Could not load position.');
-      return;
-    }
+  loadFenPosition(fen, 'FEN loaded successfully.');
+});
 
-    clearSelection();
-    clearRedoStack();
-    const history = game.history({ verbose: true });
-    lastMove = history.length ? history[history.length - 1] : null;
-    lastMoveVerdict = null;
-    setMessage('FEN loaded successfully.');
-    setEngineStatus('Position loaded. Engine ready.');
-    renderAll();
-
-    if (shouldEngineMoveNow()) {
-      scheduleEngineMove();
-    }
-  } catch (error) {
-    setMessage('Invalid FEN. Could not load position.');
+loadPresetBtn?.addEventListener('click', () => {
+  const preset = positionPresets[presetPositionSelect?.value || ''];
+  if (!preset) {
+    setMessage('Choose a preset position before loading it.');
+    return;
   }
+
+  loadFenPosition(preset.fen, preset.note);
 });
 
 engineDepthInput.addEventListener('input', () => {

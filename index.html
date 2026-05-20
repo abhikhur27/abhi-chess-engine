@@ -126,8 +126,16 @@
       </div>
 
       <h2>Load FEN</h2>
+      <label for="preset-position">Demo preset</label>
+      <select id="preset-position">
+        <option value="">Choose a guided position...</option>
+        <option value="italian">Italian center tension</option>
+        <option value="mate-net">Mate net on the kingside</option>
+        <option value="rook-endgame">Rook endgame squeeze</option>
+      </select>
       <textarea id="fen-input" rows="2" class="mono" placeholder="Paste a valid FEN and click Load"></textarea>
       <div class="button-row compact">
+        <button id="load-preset" type="button">Load Preset</button>
         <button id="load-fen" type="button">Load FEN</button>
       </div>
 
