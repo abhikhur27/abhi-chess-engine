@@ -69,6 +69,12 @@ Open `http://localhost:8000`.
 - CDN dependency: `chess.js` only.
 - No server runtime required.
 
+## Engine Limits
+
+- The built-in engine is intentionally lightweight and walkthrough-friendly, not a serious competitive engine.
+- Depth stays shallow so the position boards and move explanations remain responsive in the browser.
+- Strongest use: inspect one tactical or structural claim, then compare it against the engine line preview.
+
 ## Future Improvements
 
 - Add iterative deepening and move ordering heuristics.
