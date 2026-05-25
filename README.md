@@ -63,6 +63,12 @@ Open `http://localhost:8000`.
 3. Trigger the engine and inspect the candidate moves plus line preview.
 4. Copy the position brief for a portable walkthrough artifact.
 
+## Position Handoff Workflow
+
+- Share links are the fastest way to reopen one board state with orientation preserved.
+- `Copy Position Brief` is the better path when a position needs both the board and the current evaluation story attached.
+- FEN is the portable state export; PGN is the better export when the move order itself matters.
+
 ## GitHub Pages Compatibility
 
 - Fully static frontend.
