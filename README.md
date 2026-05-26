@@ -85,3 +85,14 @@ Open `http://localhost:8000`.
 
 - Add iterative deepening and move ordering heuristics.
 - Add opening database lookup and ECO tagging.
+
+## Interview-Style Demo Scenarios
+
+Use this quick sequence for a higher-signal walkthrough:
+
+1. Opening discipline:
+- Load FEN `r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 2 3` and compare opening guide with development board.
+2. Tactical pressure:
+- Create at least one forcing capture and compare immediate captures with engine line preview.
+3. Endgame conversion:
+- Load a king-and-pawn endgame FEN and inspect endgame posture plus king safety before exporting a position brief.
