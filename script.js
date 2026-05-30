@@ -1442,6 +1442,9 @@ document.addEventListener('keydown', (event) => {
   } else if (key === 'e') {
     event.preventDefault();
     engineMoveBtn.click();
+  } else if (key === 's') {
+    event.preventDefault();
+    copyShareLinkBtn.click();
   } else if (event.key === 'Escape') {
     event.preventDefault();
     clearSelection();
