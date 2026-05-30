@@ -1,4 +1,4 @@
-﻿# Abhi Chess Engine
+# Abhi Chess Engine
 
 Browser-based chess workspace with legal move handling, notation tooling, and an in-browser minimax engine.
 
@@ -97,3 +97,9 @@ Use this quick sequence for a higher-signal walkthrough:
 - Create at least one forcing capture and compare immediate captures with engine line preview.
 3. Endgame conversion:
 - Load a king-and-pawn endgame FEN and inspect endgame posture plus king safety before exporting a position brief.
+
+## Portfolio Positioning
+
+- Project type: Browser chess analysis app (HTML, CSS, JavaScript)
+- Verification path: Open index.html and validate move generation, engine move, and FEN load.
+
