@@ -39,6 +39,13 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
   - Alpha-beta minimax search for engine responses.
   - UI rendering and game-state synchronization.
 
+## Practical walkthrough
+
+- Play moves directly on the board or load a FEN to jump into a position.
+- Use `S` to copy a shareable position link for portfolio walkthroughs.
+- Use `Copy Position Brief` when you want one artifact that includes the board read, evaluation, and engine line.
+- Flip the board or switch engine side to demo the same position from either perspective.
+
 ```mermaid
 flowchart LR
   A[Player Move] --> B[chess.js State Update]
