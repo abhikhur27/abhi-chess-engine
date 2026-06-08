@@ -110,3 +110,9 @@ Use this quick sequence for a higher-signal walkthrough:
 - Project type: Browser chess analysis app (HTML, CSS, JavaScript)
 - Verification path: Open index.html and validate move generation, engine move, and FEN load.
 
+## Demo Flow
+
+1. Load a preset or custom FEN.
+2. Force a tactical sequence and compare the capture board against the engine line.
+3. Export the position brief once the evaluation story is worth handing off.
+
