@@ -56,6 +56,14 @@ flowchart LR
   F --> C
 ```
 
+## Quick Verification
+
+Run this syntax check before publishing browser changes:
+
+```bash
+node --check script.js
+```
+
 ## Local Run
 
 ```bash
