@@ -124,3 +124,11 @@ Use this quick sequence for a higher-signal walkthrough:
 2. Force a tactical sequence and compare the capture board against the engine line.
 3. Export the position brief once the evaluation story is worth handing off.
 
+## Quick Position Set
+
+Use these three scenarios for a tighter walkthrough instead of free play:
+
+1. Opening structure: show the opening guide plus development board.
+2. Tactical shot: stage one forcing capture and compare it with the engine line preview.
+3. Simplified ending: load an endgame FEN and read king safety against endgame posture.
+
