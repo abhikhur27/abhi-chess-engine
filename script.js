@@ -1011,7 +1011,8 @@ function renderPositionSummary() {
     } else {
       moveVerdictEl.innerHTML = `
         <p>Last move: ${lastMoveVerdict.san}</p>
-        <p>Verdict: ${lastMoveVerdict.label} | Eval after move: ${formatEvalLabel(lastMoveVerdict.score)}</p>
+        <p>Verdict: ${lastMoveVerdict.label} | Eval after move: ${formatEvalLabel(lastMoveVerdict.score)} | Gap: ${lastMoveVerdict.gap} cp</p>
+        <p>Rank from previous position: ${lastMoveVerdict.rankLabel} | Preferred move: ${lastMoveVerdict.bestSan}</p>
         <p>${lastMoveVerdict.detail}</p>
       `;
     }
@@ -1164,25 +1165,35 @@ function previewMoveVerdict(candidateMove) {
     const score = minimax(depth - 1, -Infinity, Infinity, !maximizingWhite);
     const san = game.history().slice(-1)[0];
     game.undo();
-    selected = { score, san };
+    selected = { score, san, unranked: true };
   }
 
   const gap = Math.abs(selected.score - best.score);
+  const rank = selected.unranked ? -1 : ranked.findIndex((entry) => entry.san === selected.san);
   let label = 'Best';
   if (gap > 180) label = 'Mistake';
   else if (gap > 80) label = 'Inaccuracy';
   else if (gap > 30) label = 'Solid';
   else if (gap > 0) label = 'Excellent';
 
-  const detail =
-    gap === 0
-      ? 'This matched the engine’s top-ranked continuation from the previous position.'
-      : `${Math.round(gap)} cp behind the best line. Preferred move: ${best.san}.`;
+  let detail = 'This matched the engine’s top-ranked continuation from the previous position.';
+  if (gap > 0 && gap <= 30) {
+    detail = `Only ${Math.round(gap)} cp behind the best line. This keeps the position within one practical idea of ${best.san}.`;
+  } else if (gap > 30 && gap <= 80) {
+    detail = `${Math.round(gap)} cp behind the best line. Playable, but ${best.san} kept more of the evaluation pressure.`;
+  } else if (gap > 80 && gap <= 180) {
+    detail = `${Math.round(gap)} cp behind the best line. ${best.san} preserved the cleaner continuation before the position started drifting.`;
+  } else if (gap > 180) {
+    detail = `${Math.round(gap)} cp behind the best line. ${best.san} was the stabilizing continuation before the position gave away too much.`;
+  }
 
   return {
     san: selected.san,
     score: selected.score,
+    gap: Math.round(gap),
     label,
+    bestSan: best.san,
+    rankLabel: rank >= 0 ? `#${rank + 1} of top ${ranked.length}` : `Outside top ${ranked.length}`,
     detail,
   };
 }
