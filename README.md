@@ -11,6 +11,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Shareable URL state for custom positions and board orientation.
 - Keyboard shortcut `S` now copies a shareable URL for the current position/orientation state.
 - Load custom positions from FEN.
+- Guided preset briefs explain what each built-in demo position is testing and which boards to read first.
 - Board orientation flip.
 - Engine module:
   - Select engine side (white/black)

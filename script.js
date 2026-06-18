@@ -36,6 +36,7 @@ const copyPositionBriefBtn = document.getElementById('copy-position-brief');
 const copyPgnBtn = document.getElementById('copy-pgn');
 const loadFenBtn = document.getElementById('load-fen');
 const loadPresetBtn = document.getElementById('load-preset');
+const presetGuideEl = document.getElementById('preset-guide');
 
 const engineSideSelect = document.getElementById('engine-side');
 const engineDepthInput = document.getElementById('engine-depth');
@@ -106,14 +107,32 @@ const positionPresets = {
   italian: {
     fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
     note: 'Loaded Italian center tension preset. Check development, center control, and engine candidates together.',
+    focus: 'Opening development race with immediate tactical pressure on the center and kingside diagonals.',
+    checklist: [
+      'Compare development board against center control before making a pawn grab.',
+      'Check whether the top engine line keeps pressure on f7 or resolves the center first.',
+      'Use the move verdict after one candidate move so the position reads like a coached walkthrough.',
+    ],
   },
   'mate-net': {
     fen: 'r1bq1rk1/pppp1ppp/2n2n2/4p3/2B1P1Q1/5N2/PPPP1PPP/RNB2RK1 b - - 0 6',
     note: 'Loaded kingside mate-net preset. Inspect threat pressure, king safety, and forcing engine lines.',
+    focus: 'Black to move under direct kingside pressure, where one slow move can collapse into a mating net.',
+    checklist: [
+      'Read king safety together with threat board before exploring any material counterplay.',
+      'Compare the best engine move against at least one tempting defensive move to see the centipawn gap.',
+      'Export the position brief once the forcing line is clear enough to explain in one paragraph.',
+    ],
   },
   'rook-endgame': {
     fen: '8/5pk1/3r2p1/3P4/4R3/6P1/5P1P/6K1 w - - 0 1',
     note: 'Loaded rook endgame preset. Read space, king activity, and endgame posture before moving.',
+    focus: 'Rook ending where king activity and pawn-race timing matter more than raw material counting.',
+    checklist: [
+      'Inspect endgame posture before trading rooks or pushing the passed pawn.',
+      'Use the activity and space boards to decide whether the king should centralize first.',
+      'Compare one patient move against one forcing move with the move verdict panel.',
+    ],
   },
 };
 
@@ -126,6 +145,7 @@ let lastMoveVerdict = null;
 let engineThinking = false;
 let pendingEngineTimeout = null;
 let redoStack = [];
+let activePresetKey = '';
 const START_FEN = createGame().fen();
 
 const pst = {
@@ -339,6 +359,7 @@ function renderAll() {
   renderMoveList();
   updateStatus();
   renderPositionSummary();
+  renderPresetGuide();
 }
 
 function getLegalTargets(square) {
@@ -354,7 +375,7 @@ function clearSelection() {
   legalTargets = [];
 }
 
-function loadFenPosition(fen, successMessage) {
+function loadFenPosition(fen, successMessage, presetKey = '') {
   try {
     const loaded = game.load(fen);
     if (!loaded) {
@@ -367,6 +388,7 @@ function loadFenPosition(fen, successMessage) {
     const history = game.history({ verbose: true });
     lastMove = history.length ? history[history.length - 1] : null;
     lastMoveVerdict = null;
+    activePresetKey = presetKey;
     fenInput.value = fen;
     setMessage(successMessage);
     setEngineStatus('Position loaded. Engine ready.');
@@ -381,6 +403,21 @@ function loadFenPosition(fen, successMessage) {
     setMessage('Invalid FEN. Could not load position.');
     return false;
   }
+}
+
+function renderPresetGuide() {
+  if (!presetGuideEl) return;
+
+  const preset = positionPresets[activePresetKey];
+  if (!preset) {
+    presetGuideEl.innerHTML = '<p>Preset guide: load one of the guided demo positions for a tighter interview walkthrough.</p>';
+    return;
+  }
+
+  presetGuideEl.innerHTML = [
+    `<p><strong>${preset.focus}</strong></p>`,
+    ...preset.checklist.map((item, index) => `<p>${index + 1}. ${item}</p>`),
+  ].join('');
 }
 
 function syncUrlState() {
@@ -1289,6 +1326,7 @@ function buildPositionBrief() {
     `Evaluation breakdown: ${(evaluationBreakdownEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Position plan: ${(positionPlanEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Threat board: ${(threatBoardEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Preset guide: ${(presetGuideEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Move verdict: ${(moveVerdictEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Engine candidates: ${(engineCandidatesEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Engine line preview: ${(engineLinePreviewEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
@@ -1365,6 +1403,7 @@ resetBtn.addEventListener('click', () => {
   clearSelection();
   lastMove = null;
   lastMoveVerdict = null;
+  activePresetKey = '';
   engineThinking = false;
   engineMoveBtn.disabled = false;
   setMessage('Game reset to initial position.');
@@ -1408,7 +1447,7 @@ loadPresetBtn?.addEventListener('click', () => {
     return;
   }
 
-  loadFenPosition(preset.fen, preset.note);
+  loadFenPosition(preset.fen, preset.note, presetPositionSelect?.value || '');
 });
 
 engineDepthInput.addEventListener('input', () => {
