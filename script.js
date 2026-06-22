@@ -436,6 +436,30 @@ function syncUrlState() {
     params.delete('orientation');
   }
 
+  if (engineSideSelect.value !== 'b') {
+    params.set('engine', engineSideSelect.value);
+  } else {
+    params.delete('engine');
+  }
+
+  if (engineDepthInput.value !== '2') {
+    params.set('depth', engineDepthInput.value);
+  } else {
+    params.delete('depth');
+  }
+
+  if (!engineAutoCheck.checked) {
+    params.set('auto', '0');
+  } else {
+    params.delete('auto');
+  }
+
+  if (activePresetKey) {
+    params.set('preset', activePresetKey);
+  } else {
+    params.delete('preset');
+  }
+
   const nextUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
   window.history.replaceState({}, '', nextUrl);
 }
@@ -444,6 +468,10 @@ function hydrateFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const fen = params.get('fen');
   const orientationParam = params.get('orientation');
+  const engineParam = params.get('engine');
+  const depthParam = params.get('depth');
+  const autoParam = params.get('auto');
+  const presetParam = params.get('preset');
 
   if (fen) {
     try {
@@ -457,6 +485,26 @@ function hydrateFromUrl() {
 
   if (orientationParam === 'black') {
     orientation = 'black';
+  }
+
+  if (engineParam === 'w' || engineParam === 'b') {
+    engineSideSelect.value = engineParam;
+  }
+
+  const depth = Number.parseInt(depthParam || '', 10);
+  if (Number.isInteger(depth) && depth >= 1 && depth <= 3) {
+    engineDepthInput.value = String(depth);
+  }
+
+  if (autoParam === '0') {
+    engineAutoCheck.checked = false;
+  }
+
+  if (presetParam && positionPresets[presetParam]) {
+    activePresetKey = presetParam;
+    if (presetPositionSelect) {
+      presetPositionSelect.value = presetParam;
+    }
   }
 }
 
@@ -1321,6 +1369,7 @@ function buildPositionBrief() {
     '',
     `FEN: ${game.fen()}`,
     `PGN: ${game.pgn({ max_width: 72, newline_char: ' ' }) || 'Opening position'}`,
+    `Analysis setup: engine ${engineSideSelect.value === 'w' ? 'White' : 'Black'} | depth ${engineDepthInput.value} | auto reply ${engineAutoCheck.checked ? 'on' : 'off'} | preset ${activePresetKey || 'custom'}`,
     `Position summary: ${(positionSummaryEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Tactical pressure: ${(tacticalPressureEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Evaluation breakdown: ${(evaluationBreakdownEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,

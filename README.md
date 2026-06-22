@@ -8,7 +8,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Move history in SAN notation.
 - FEN / PGN export and copy.
 - Copy Position Brief exports the current board read, evaluation summary, and engine line as one walkthrough artifact.
-- Shareable URL state for custom positions and board orientation.
+- Shareable URL state for custom positions, board orientation, engine-side setup, depth, auto-reply mode, and guided presets.
 - Keyboard shortcut `S` now copies a shareable URL for the current position/orientation state.
 - Load custom positions from FEN.
 - Guided preset briefs explain what each built-in demo position is testing and which boards to read first.
@@ -45,7 +45,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 
 - Play moves directly on the board or load a FEN to jump into a position.
 - Use `S` to copy a shareable position link for portfolio walkthroughs.
-- Use `Copy Position Brief` when you want one artifact that includes the board read, evaluation, and engine line.
+- Use `Copy Position Brief` when you want one artifact that includes the board read, evaluation, engine line, and current engine setup.
 - Flip the board or switch engine side to demo the same position from either perspective.
 
 ```mermaid
