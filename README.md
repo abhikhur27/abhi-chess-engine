@@ -30,6 +30,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
 - Opening guide identifies common lines from the current SAN move order.
 - Development board tracks minor-piece rollout, king safety posture, and central-pawn activation before the position leaves the opening.
 - Engine line preview extends the top continuation into a short best-line sequence for portfolio walkthroughs.
+- Engine candidate rows can now be played directly from the ranking board when you want to test the top line without manually entering the move.
 - Move verdict now reports centipawn gap, candidate rank, and the best alternative from the prior position so mistakes read more concretely than a generic label.
 
 ## Technical Design

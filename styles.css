@@ -306,6 +306,36 @@ select {
   margin-top: 0.28rem;
 }
 
+.candidate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.candidate-row + .candidate-row {
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(164, 173, 193, 0.14);
+}
+
+.candidate-play-btn {
+  border: 1px solid rgba(94, 234, 212, 0.36);
+  border-radius: 999px;
+  padding: 0.42rem 0.72rem;
+  background: rgba(94, 234, 212, 0.08);
+  color: #dbe4f2;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-play-btn:hover,
+.candidate-play-btn:focus-visible {
+  border-color: rgba(94, 234, 212, 0.62);
+  background: rgba(94, 234, 212, 0.18);
+}
+
 textarea {
   width: 100%;
   margin-top: 0.4rem;

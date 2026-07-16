@@ -1115,7 +1115,20 @@ function renderPositionSummary() {
             formatEvalLabel(entry.score);
           const margin = Math.abs(entry.score - bestScore);
           const gap = index === 0 ? 'Best line' : `Gap ${Math.round(margin)} cp`;
-          return `<p>${index + 1}. ${entry.san} | ${edge} | ${gap}</p>`;
+          return `
+            <div class="candidate-row">
+              <p>${index + 1}. ${entry.san} | ${edge} | ${gap}</p>
+              <button
+                type="button"
+                class="candidate-play-btn"
+                data-from="${entry.move.from}"
+                data-to="${entry.move.to}"
+                data-promotion="${entry.move.promotion || ''}"
+              >
+                Play
+              </button>
+            </div>
+          `;
         })
         .join('');
     }
@@ -1391,6 +1404,31 @@ function clearRedoStack() {
   redoStack = [];
 }
 
+function playSuggestedMove(from, to, promotion = 'q') {
+  if (!from || !to || engineThinking) {
+    return;
+  }
+
+  const verdict = previewMoveVerdict({ from, to, promotion });
+  const move = game.move({ from, to, promotion });
+  if (!move) {
+    setMessage('Suggested move is no longer legal from the current position.');
+    renderAll();
+    return;
+  }
+
+  clearRedoStack();
+  selectedSquare = null;
+  legalTargets = [];
+  lastMove = move;
+  lastMoveVerdict = verdict;
+  setMessage(`Played suggested move ${move.san}.`);
+  renderAll();
+  if (shouldEngineMoveNow()) {
+    scheduleEngineMove();
+  }
+}
+
 undoBtn.addEventListener('click', () => {
   if (pendingEngineTimeout) {
     clearTimeout(pendingEngineTimeout);
@@ -1478,6 +1516,19 @@ copyShareLinkBtn.addEventListener('click', () => {
 });
 copyPositionBriefBtn.addEventListener('click', () => copyText(buildPositionBrief(), 'position brief'));
 copyPgnBtn.addEventListener('click', () => copyText(game.pgn({ max_width: 72, newline_char: '\n' }), 'PGN'));
+
+engineCandidatesEl?.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || !target.classList.contains('candidate-play-btn')) {
+    return;
+  }
+
+  playSuggestedMove(
+    target.dataset.from || '',
+    target.dataset.to || '',
+    target.dataset.promotion || 'q'
+  );
+});
 
 loadFenBtn.addEventListener('click', () => {
   const fen = fenInput.value.trim();
