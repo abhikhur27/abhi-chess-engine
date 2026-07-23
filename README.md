@@ -20,6 +20,7 @@ Browser-based chess workspace with legal move handling, notation tooling, and an
   - Auto-reply mode after player moves
 - Evaluation uses piece values + piece-square tables.
 - Evaluation panel separates material and positional terms for easier engine inspection.
+- Rule-state board surfaces castling rights, en passant availability, threefold-claim posture, and 50-move-clock pressure so late-game legality context is visible without parsing raw FEN text.
 - Tactical pressure panel surfaces mobility, capture density, checking moves, and rough game phase.
 - Immediate captures board lists the direct tactical shots available to the side to move and highlights the highest-value target.
 - King safety board estimates pawn shield quality and nearby enemy pressure around both kings.

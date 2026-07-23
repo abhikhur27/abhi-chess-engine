@@ -6,6 +6,7 @@ const pgnEl = document.getElementById('pgn');
 const fenInput = document.getElementById('fen-input');
 const presetPositionSelect = document.getElementById('preset-position');
 const positionSummaryEl = document.getElementById('position-summary');
+const ruleStateBoardEl = document.getElementById('rule-state-board');
 const tacticalPressureEl = document.getElementById('tactical-pressure');
 const immediateCapturesBoardEl = document.getElementById('immediate-captures-board');
 const evaluationBreakdownEl = document.getElementById('evaluation-breakdown');
@@ -672,6 +673,31 @@ function renderPositionSummary() {
     <p>Pieces: White ${counts.w} | Black ${counts.b}</p>
     <p>Static eval: ${evalLabel}</p>
   `;
+
+  if (ruleStateBoardEl) {
+    const fenParts = game.fen().split(' ');
+    const castling = fenParts[2] && fenParts[2] !== '-' ? fenParts[2] : 'None';
+    const enPassant = fenParts[3] && fenParts[3] !== '-' ? fenParts[3] : 'None';
+    const halfmoveClock = Number.parseInt(fenParts[4] || '0', 10);
+    const fullmoveNumber = Number.parseInt(fenParts[5] || '1', 10);
+    const threefoldReady =
+      typeof game.in_threefold_repetition === 'function'
+        ? game.in_threefold_repetition()
+        : typeof game.isThreefoldRepetition === 'function'
+          ? game.isThreefoldRepetition()
+          : false;
+    const fiftyMoveCue =
+      Number.isFinite(halfmoveClock) && halfmoveClock >= 80
+        ? 'The 50-move draw counter is close enough to change practical endgame choices.'
+        : 'No immediate 50-move draw pressure.';
+
+    ruleStateBoardEl.innerHTML = `
+      <p>Castling rights: ${castling}</p>
+      <p>En passant: ${enPassant} | Halfmove clock: ${Number.isFinite(halfmoveClock) ? halfmoveClock : 0}</p>
+      <p>Fullmove: ${Number.isFinite(fullmoveNumber) ? fullmoveNumber : 1} | Threefold claim: ${threefoldReady ? 'Available now' : 'Not yet available'}</p>
+      <p>${fiftyMoveCue}</p>
+    `;
+  }
 
   if (tacticalPressureEl) {
     const legalMoves = game.moves({ verbose: true });
@@ -1384,6 +1410,7 @@ function buildPositionBrief() {
     `PGN: ${game.pgn({ max_width: 72, newline_char: ' ' }) || 'Opening position'}`,
     `Analysis setup: engine ${engineSideSelect.value === 'w' ? 'White' : 'Black'} | depth ${engineDepthInput.value} | auto reply ${engineAutoCheck.checked ? 'on' : 'off'} | preset ${activePresetKey || 'custom'}`,
     `Position summary: ${(positionSummaryEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
+    `Rule state: ${(ruleStateBoardEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Tactical pressure: ${(tacticalPressureEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Evaluation breakdown: ${(evaluationBreakdownEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
     `Position plan: ${(positionPlanEl?.textContent || '').replace(/\s+/g, ' ').trim()}`,
